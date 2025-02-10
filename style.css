@@ -1,0 +1,58 @@
+body {
+    background-color: #fcf7f8;
+
+}
+
+h1 {
+    color: #0274F7;
+    text-align: center;
+    background-color: #C5CFDB;
+    font-size: 3em;
+    margin-bottom: 0px;
+    margin-top: 0px;
+
+}
+
+h2 {
+    color: #01489A;
+    background-color: 
+
+}
+
+nav {
+    background-color: white;
+    height: 50px;
+    margin-top: 0px;
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+    margin: 10px;
+
+}
+
+a:visited {
+    color: darkblue;
+}
+
+a:hover {
+    background-color: #fffc47;
+    opacity: 0.5;
+}
+
+#home1 {
+    background-color: 
+}
+
+#home2 {
+    
+}
+
+#images {
+    text-align: center;
+}
+
+img {
+    width: 500px;
+}
