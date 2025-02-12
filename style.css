@@ -4,9 +4,9 @@ body {
 }
 
 h1 {
-    color: #0274F7;
+    color: #c6e5f3;
     text-align: center;
-    background-color: #C5CFDB;
+    background-color: white;
     font-size: 3em;
     margin-bottom: 0px;
     margin-top: 0px;
@@ -14,7 +14,7 @@ h1 {
 }
 
 h2 {
-    color: #01489A;
+    color: #292e70;
     background-color: 
 
 }
@@ -37,7 +37,7 @@ a:visited {
 }
 
 a:hover {
-    background-color: #fffc47;
+    background-color: #c6e5f3;
     opacity: 0.5;
 }
 
@@ -46,6 +46,10 @@ a:hover {
 }
 
 #home2 {
+
+}
+
+#home3 {
     
 }
 
@@ -55,4 +59,8 @@ a:hover {
 
 img {
     width: 500px;
+}
+
+#logo {
+    width: 200px;
 }
