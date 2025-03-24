@@ -156,7 +156,9 @@ def login_user():
                 "role": user["role"],
                 "email": user["email"],
                 "auto_payment": user["auto_payment"],
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+                "iss": "gym_management_system",
+                "aud": "gym_members"
             },
             SECRET_KEY,
             algorithm="HS256"

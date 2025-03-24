@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect
 from routes.auth import auth_bp
 from routes.users import users_bp
 from routes.memberships import memberships_bp
@@ -15,6 +16,8 @@ from logging.handlers import RotatingFileHandler
 import os
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
+csrf = CSRFProtect(app)
 
 # Configure CORS with specific options
 CORS(app, resources={

@@ -18,6 +18,9 @@ def setup_test_database():
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {TEST_DATABASE_CONFIG['database']}")
         cursor.execute(f"USE {TEST_DATABASE_CONFIG['database']}")
 
+        # Drop existing tables to ensure clean state
+        cursor.execute("DROP TABLE IF EXISTS users")
+
         # Create users table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -40,24 +43,15 @@ def setup_test_database():
         # Create test users
         from tests.test_config import TEST_USER, TEST_ADMIN
 
-        # Hash passwords
-        test_user_pw = bcrypt.hashpw(TEST_USER['password'].encode('utf-8'), bcrypt.gensalt())
-        test_admin_pw = bcrypt.hashpw(TEST_ADMIN['password'].encode('utf-8'), bcrypt.gensalt())
+        # Hash passwords with consistent salt for testing
+        salt = bcrypt.gensalt()
+        test_user_pw = bcrypt.hashpw(TEST_USER['password'].encode('utf-8'), salt)
+        test_admin_pw = bcrypt.hashpw(TEST_ADMIN['password'].encode('utf-8'), salt)
 
         # Insert test users
         cursor.execute("""
             INSERT INTO users (name, email, password, role, dob, address, city, state, zipcode, auto_payment)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            name = VALUES(name),
-            password = VALUES(password),
-            role = VALUES(role),
-            dob = VALUES(dob),
-            address = VALUES(address),
-            city = VALUES(city),
-            state = VALUES(state),
-            zipcode = VALUES(zipcode),
-            auto_payment = VALUES(auto_payment)
         """, (
             TEST_USER['name'], TEST_USER['email'], test_user_pw, 'non_member',
             TEST_USER['dob'], TEST_USER['address'], TEST_USER['city'],
@@ -67,16 +61,6 @@ def setup_test_database():
         cursor.execute("""
             INSERT INTO users (name, email, password, role, dob, address, city, state, zipcode, auto_payment)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            name = VALUES(name),
-            password = VALUES(password),
-            role = VALUES(role),
-            dob = VALUES(dob),
-            address = VALUES(address),
-            city = VALUES(city),
-            state = VALUES(state),
-            zipcode = VALUES(zipcode),
-            auto_payment = VALUES(auto_payment)
         """, (
             TEST_ADMIN['name'], TEST_ADMIN['email'], test_admin_pw, 'admin',
             TEST_ADMIN['dob'], TEST_ADMIN['address'], TEST_ADMIN['city'],
@@ -89,6 +73,9 @@ def setup_test_database():
 
     except mysql.connector.Error as e:
         print(f"❌ Error setting up test database: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error setting up test database: {e}")
         return False
     finally:
         if 'cursor' in locals():

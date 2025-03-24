@@ -1,6 +1,7 @@
 import unittest
 import os
 import tempfile
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,18 +13,26 @@ class TestLoginFrontend(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the webdriver before running tests"""
-        # Create a unique temporary directory for Chrome profile
-        cls.temp_dir = tempfile.mkdtemp()
+        # Create a unique temporary directory for Chrome profile with timestamp
+        timestamp = int(time.time())
+        cls.temp_dir = tempfile.mkdtemp(prefix=f'chrome_profile_{timestamp}_')
         
-        # Configure Chrome options
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument(f'--user-data-dir={cls.temp_dir}')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        
-        # Initialize WebDriver with options
-        cls.driver = webdriver.Chrome(options=chrome_options)
-        cls.wait = WebDriverWait(cls.driver, WAIT_TIMEOUT)
+        try:
+            # Configure Chrome options
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument(f'--user-data-dir={cls.temp_dir}')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--headless')  # Run in headless mode for CI
+            
+            # Initialize WebDriver with options
+            cls.driver = webdriver.Chrome(options=chrome_options)
+            cls.wait = WebDriverWait(cls.driver, WAIT_TIMEOUT)
+        except Exception as e:
+            # Clean up temp directory if setup fails
+            import shutil
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
+            raise e
 
     @classmethod
     def tearDownClass(cls):

@@ -3,6 +3,7 @@ import json
 import requests
 from tests.test_config import TEST_SERVER_URL, TEST_API_URL, TEST_USER, TEST_ADMIN
 from tests.test_db import setup_test_database, cleanup_test_database
+import time
 
 class TestAuthAPI(unittest.TestCase):
     @classmethod
@@ -124,12 +125,13 @@ class TestAuthAPI(unittest.TestCase):
             "password": "wrongpassword"
         }
 
-        # Make multiple failed login attempts
+        # Make multiple failed login attempts with delay
         for _ in range(6):  # Should hit rate limit after 5 attempts
             response = requests.post(
                 f"{self.api_url}/login",
                 json=login_data
             )
+            time.sleep(1)  # Add 1 second delay between attempts
 
         self.assertEqual(response.status_code, 429)
         data = response.json()
