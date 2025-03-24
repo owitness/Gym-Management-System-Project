@@ -77,7 +77,7 @@ def log_test_results(logger, result, coverage_data):
 def start_flask_server():
     """Start the Flask server in a separate process"""
     server_process = subprocess.Popen(
-        ['python', 'app.py'],
+        ['python3', 'app.py'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
