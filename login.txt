@@ -1,0 +1,5 @@
+ssh -i "main.pem" ubuntu@ec2-18-191-239-86.us-east-2.compute.amazonaws.com
+root
+COSCAdmin
+
+mysql -h gym-database.clqqsuqke2sz.us-east-2.rds.amazonaws.com -u root -p COSCAdmin

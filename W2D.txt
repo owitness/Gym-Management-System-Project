@@ -1,0 +1,6 @@
+Users table
+Memberships table
+Classes table
+Class bookings table
+Payment table
+Attendance table

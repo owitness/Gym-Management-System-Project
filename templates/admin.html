@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" class="admin">
+<head>
+    <link href="admin.css" type="text/css" rel="stylesheet">
+    <link href="home.html" rel="home">
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let statusElements = document.querySelectorAll(".repair-status");
+            statusElements.forEach(function(status) {
+                status.classList.remove("open", "closed");
+                status.classList.add("closed");
+                status.textContent = "Pending";
+            });
+
+            let actionButtons = document.querySelectorAll(".repair-action-btn");
+            actionButtons.forEach(function(button) {
+                button.addEventListener("click", function(event) {
+                    event.preventDefault();
+                    let row = event.target.closest('tr');
+                    let statusCell = row.querySelector(".repair-status");
+
+                    if (statusCell.classList.contains("closed") || statusCell.textContent === "Pending") {
+                        statusCell.classList.remove("closed");
+                        statusCell.classList.add("open");
+                        statusCell.textContent = "In Progress";
+                        event.target.textContent = "Mark as Complete";
+                    } else if (statusCell.classList.contains("open") && statusCell.textContent === "In Progress") {
+                        statusCell.classList.remove("open");
+                        statusCell.classList.add("complete");
+                        statusCell.textContent = "Completed";
+                        event.target.textContent = "Archive";
+                    } else if (statusCell.classList.contains("complete") && statusCell.textContent === "Completed") {
+                        statusCell.classList.remove("complete");
+                        statusCell.classList.add("archive");
+                        statusCell.textContent = "Archived";
+                        event.target.textContent = "Archived"; 
+                        event.target.disabled = true; 
+                    }
+                });
+            });
+        });
+let classes = [];
+
+function addClassToList(classData) {
+    const classList = document.getElementById("classList");
+    const li = document.createElement("li");
+    li.textContent = `${classData.className} with ${classData.instructor} on ${classData.classDate} (Capacity: ${classData.classCapacity})`;
+    classList.appendChild(li);
+}
+
+document.getElementById("newClassForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    const className = document.getElementById("className").value;
+    const instructor = document.getElementById("instructor").value;
+    const classDate = document.getElementById("classDate").value;
+    const classCapacity = document.getElementById("classCapacity").value;
+
+    const newClass = {
+        className: className,
+        instructor: instructor,
+        classDate: classDate,
+        classCapacity: classCapacity
+    };
+
+    //Needs changed when database is set up
+    classes.push(newClass);
+    addClassToList(newClass);
+
+     // Show confirmation message
+     const confirmationMessage = document.getElementById('confirmationMessage');
+    confirmationMessage.style.display = 'block';
+
+    // Hide the confirmation message after a few seconds
+    setTimeout(function() {
+        confirmationMessage.style.display = 'none';
+    }, 3000);
+
+    // Optionally clear the form after submission
+    document.getElementById("newClassForm").reset();
+});
+//Employee script
+        let employees = [];
+
+        // Function to add new employee to the list
+        function addEmployeeToList(employeeData) {
+            const employeeList = document.getElementById("employeeList");
+            const li = document.createElement("li");
+            li.textContent = `${employeeData.employeeName}, Role: ${employeeData.employeeRole}, Start Date: ${employeeData.startDate}, Status: ${employeeData.status}`;
+            employeeList.appendChild(li);
+        }
+
+        // Function to handle form submission for new employee
+        document.getElementById("newEmployeeForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            // Get form data
+            const employeeName = document.getElementById("employeeName").value;
+            const employeeRole = document.getElementById("employeeRole").value;
+            const startDate = document.getElementById("startDate").value;
+            const status = document.getElementById("status").value;
+
+            // Create a new employee object
+            const newEmployee = {
+                employeeName: employeeName,
+                employeeRole: employeeRole,
+                startDate: startDate,
+                status: status
+            };
+
+            // Add the new employee to the employees array
+            employees.push(newEmployee);
+
+            // Add the new employee to the display list
+            addEmployeeToList(newEmployee);
+
+            // Clear the form fields
+            document.getElementById("newEmployeeForm").reset();
+        });
+
+        function classconfirmationMessage() {
+        alert("Class has been successfully added!");
+        }
+
+        function employeeConfirmationMessage() {
+        alert("An Employee has been successfully added!");
+        }
+    </script>
+</head>
+<body>
+
+    <header>
+        <h1>Gym Admin Dashboard</h1>
+    </header>
+
+    <div class="container">
+        <form id="newClassForm">
+            <label for="className">Class Name:</label>
+            <input type="text" id="className" name="className" required>
+
+            <label for="instructor">Instructor:</label>
+            <input type="text" id="instructor" name="instructor" required>
+
+            <label for="classDate">Class Date and Time:</label>
+            <input type="datetime-local" id="classDate" name="classDate" required>
+
+            <label for="classCapacity">Class Capacity:</label>
+            <input type="number" id="classCapacity" name="classCapacity" min="1" required>
+
+            <button type="submit" onclick="classconfirmationMessage()">Add Class</button>
+        </form>x
+
+
+        <h3>Class Sizes & Open Spots</h3>
+        <ul id="classList"> 
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Class Name</th>
+                        <th>Instructor</th>
+                        <th>Max Capacity</th>
+                        <th>Current Size</th>
+                        <th>Open Spots</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Yoga</td>
+                        <td>Sarah</td>
+                        <td>20</td>
+                        <td>15</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>Jump</td>
+                        <td>John</td>
+                        <td>25</td>
+                        <td>20</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>Spin</td>
+                        <td>Amy</td>
+                        <td>15</td>
+                        <td>15</td>
+                        <td>0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        </ul>
+    
+        </div>
+        <h2>Repair Orders</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Equipment</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#101</td>
+                        <td>Water Fountain</td>
+                        <td><span class="repair-status closed">Pending</span></td>
+                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
+                    </tr>
+                    <tr>
+                        <td>#102</td>
+                        <td>Bathroom Needs Cleaned</td>
+                        <td><span class="repair-status closed">Pending</span></td>
+                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
+                    </tr>
+                    <tr>
+                        <td>#103</td>
+                        <td>Cable on Chest Fly machine needs Greased</td>
+                        <td><span class="repair-status closed">Pending</span></td>
+                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    
+
+        <h2>Memberships</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Member Name</th>
+                        <th>Membership Type</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Client 1</td>
+                        <td>Monthly</td>
+                        <td>2025-01-10</td>
+                        <td>2025-02-10</td>
+                        <td><span class="membership-status expired">Expired</span></td>
+                    </tr>
+                    <tr>
+                        <td>Client 2</td>
+                        <td>Annual</td>
+                        <td>2024-05-25</td>
+                        <td>2025-05-25</td>
+                        <td><span class="membership-status active">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td>Client 3</td>
+                        <td>Monthly</td>
+                        <td>2025-02-01</td>
+                        <td>2025-03-01</td>
+                        <td><span class="membership-status active">Active</span></td>
+                    </tr>
+                </tbody>
+            </table>
+    </div>
+    <h2>Employee Management</h2>
+        <form id="newEmployeeForm">
+            <label for="employeeName">Employee Name:</label>
+            <input type="text" id="employeeName" name="employeeName" required>
+
+            <label for="employeeRole">Role:</label>
+            <input type="text" id="employeeRole" name="employeeRole" required>
+
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" name="startDate" required>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+
+            <button type="submit" onclick="employeeConfirmationMessage()">Add Employee</button>
+            
+        </form>
+
+
+        <h2>Employee List</h2>
+        <ul id="employeeList">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Role</th>
+                            <th>Start Date</th>
+                            <th>Employee Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>John Doe</td>
+                            <td>Desk Attendant</td>
+                            <td>2025-01-10</td>
+                            <td>002</td>
+                            <td><span class="employee-status expired">Expired</span></td>
+                        </tr>
+                        <tr>
+                            <td>Dohn Joe</td>
+                            <td>Maintence</td>
+                            <td>2024-05-25</td>
+                            <td>003</td>
+                            <td><span class="employee-status active">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>Rohn Jom</td>
+                            <td>Trainer</td>
+                            <td>2025-02-01</td>
+                            <td>004</td>
+                            <td><span class="employee-status active">Active</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+        </ul>
+        
+    </div>
+
+</body>
+
+</body>
+</html>
