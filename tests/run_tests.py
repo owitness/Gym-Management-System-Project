@@ -7,6 +7,9 @@ import logging
 from datetime import datetime
 import json
 
+# Add the parent directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 def setup_logging():
     """Set up logging configuration"""
     # Create logs directory if it doesn't exist
