@@ -8,10 +8,26 @@ import time
 class TestAuthAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        """Set up test database before running tests"""
+        """Set up test database and ensure server is running before running tests"""
         print("\nSetting up test database...")
         if not setup_test_database():
             raise Exception("Failed to set up test database")
+            
+        # Wait for server to be ready
+        max_retries = 5
+        retry_delay = 2
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(f"{TEST_SERVER_URL}/health")
+                if response.status_code == 200:
+                    print("Server is ready")
+                    break
+            except requests.exceptions.ConnectionError:
+                if attempt < max_retries - 1:
+                    print(f"Server not ready, retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    raise Exception("Server failed to start after maximum retries")
 
     @classmethod
     def tearDownClass(cls):
@@ -168,6 +184,23 @@ class TestAuthAPI(unittest.TestCase):
         response = requests.get(f"{self.api_url}/profile")
         self.assertEqual(response.status_code, 401)
 
+    def test_invalid_token(self):
+        """Test profile endpoint with invalid token"""
+        response = requests.get(
+            f"{self.api_url}/profile",
+            headers={"Authorization": "Bearer invalid_token"}
+        )
+        self.assertEqual(response.status_code, 401)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_missing_token(self):
+        """Test profile endpoint with missing token"""
+        response = requests.get(f"{self.api_url}/profile")
+        self.assertEqual(response.status_code, 401)
+        data = response.json()
+        self.assertIn("error", data)
+
     def test_role_update(self):
         """Test admin role update functionality"""
         # Login as admin
@@ -206,6 +239,78 @@ class TestAuthAPI(unittest.TestCase):
             headers={"Authorization": f"Bearer {admin_token}"}
         )
         self.assertEqual(response.json()["role"], "member")
+
+    def test_role_update_unauthorized(self):
+        """Test role update without admin privileges"""
+        # Login as regular user
+        login_data = {
+            "email": self.test_user["email"],
+            "password": self.test_user["password"]
+        }
+        response = requests.post(
+            f"{self.api_url}/login",
+            json=login_data
+        )
+        user_token = response.json()["token"]
+
+        # Try to update role without admin privileges
+        update_data = {"role": "member"}
+        response = requests.put(
+            f"{self.api_url}/users/1/role",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json=update_data
+        )
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_role_update_invalid_role(self):
+        """Test role update with invalid role"""
+        # Login as admin
+        login_data = {
+            "email": self.test_admin["email"],
+            "password": self.test_admin["password"]
+        }
+        response = requests.post(
+            f"{self.api_url}/login",
+            json=login_data
+        )
+        admin_token = response.json()["token"]
+
+        # Try to update role with invalid role
+        update_data = {"role": "invalid_role"}
+        response = requests.put(
+            f"{self.api_url}/users/1/role",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json=update_data
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_role_update_nonexistent_user(self):
+        """Test role update for nonexistent user"""
+        # Login as admin
+        login_data = {
+            "email": self.test_admin["email"],
+            "password": self.test_admin["password"]
+        }
+        response = requests.post(
+            f"{self.api_url}/login",
+            json=login_data
+        )
+        admin_token = response.json()["token"]
+
+        # Try to update role for nonexistent user
+        update_data = {"role": "member"}
+        response = requests.put(
+            f"{self.api_url}/users/999999/role",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json=update_data
+        )
+        self.assertEqual(response.status_code, 404)
+        data = response.json()
+        self.assertIn("error", data)
 
 if __name__ == '__main__':
     unittest.main() 
