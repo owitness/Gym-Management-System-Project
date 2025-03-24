@@ -6,6 +6,8 @@ from coverage import Coverage
 import logging
 from datetime import datetime
 import json
+import subprocess
+import time
 
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -72,67 +74,93 @@ def log_test_results(logger, result, coverage_data):
         logger.info(f"Lines Covered: {data['lines_covered']}")
         logger.info(f"Total Lines: {data['total_lines']}")
 
+def start_flask_server():
+    """Start the Flask server in a separate process"""
+    server_process = subprocess.Popen(
+        ['python', 'app.py'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    # Wait for server to start
+    time.sleep(2)
+    return server_process
+
+def stop_flask_server(server_process):
+    """Stop the Flask server process"""
+    server_process.terminate()
+    server_process.wait()
+
 def run_tests():
     """Run all tests with coverage reporting and logging"""
     # Set up logging
     logger, log_file = setup_logging()
     logger.info("Starting test run...")
 
-    # Start coverage measurement
-    cov = Coverage()
-    cov.start()
-    logger.info("Started coverage measurement")
+    # Start Flask server
+    logger.info("Starting Flask server...")
+    server_process = start_flask_server()
 
-    # Discover and run all tests
-    loader = unittest.TestLoader()
-    start_dir = os.path.dirname(os.path.abspath(__file__))
-    suite = loader.discover(start_dir, pattern='test_*.py')
-    
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
+    try:
+        # Start coverage measurement
+        cov = Coverage()
+        cov.start()
+        logger.info("Started coverage measurement")
 
-    # Stop coverage measurement
-    cov.stop()
-    cov.save()
-    logger.info("Stopped coverage measurement")
+        # Discover and run all tests
+        loader = unittest.TestLoader()
+        start_dir = os.path.dirname(os.path.abspath(__file__))
+        suite = loader.discover(start_dir, pattern='test_*.py')
+        
+        runner = unittest.TextTestRunner(verbosity=2)
+        result = runner.run(suite)
 
-    # Generate coverage data
-    coverage_data = {
-        'total_coverage': cov.report(),
-        'lines_covered': cov.analysis2('app.py')[1],
-        'total_lines': cov.analysis2('app.py')[2],
-        'modules': {}
-    }
+        # Stop coverage measurement
+        cov.stop()
+        cov.save()
+        logger.info("Stopped coverage measurement")
 
-    # Get coverage data for each module
-    for module in cov.get_data().measured_files():
-        analysis = cov.analysis2(module)
-        coverage_data['modules'][module] = {
-            'coverage': cov.report(module),
-            'lines_covered': analysis[1],
-            'total_lines': analysis[2]
+        # Generate coverage data
+        coverage_data = {
+            'total_coverage': cov.report(),
+            'lines_covered': cov.analysis2('app.py')[1],
+            'total_lines': cov.analysis2('app.py')[2],
+            'modules': {}
         }
 
-    # Log test results
-    log_test_results(logger, result, coverage_data)
+        # Get coverage data for each module
+        for module in cov.get_data().measured_files():
+            analysis = cov.analysis2(module)
+            coverage_data['modules'][module] = {
+                'coverage': cov.report(module),
+                'lines_covered': analysis[1],
+                'total_lines': analysis[2]
+            }
 
-    # Generate HTML coverage report
-    html_dir = 'coverage_html'
-    cov.html_report(directory=html_dir)
-    logger.info(f"HTML coverage report generated in {html_dir} directory")
+        # Log test results
+        log_test_results(logger, result, coverage_data)
 
-    # Save coverage data to JSON file
-    coverage_json = f'logs/coverage_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-    with open(coverage_json, 'w') as f:
-        json.dump(coverage_data, f, indent=4)
-    logger.info(f"Coverage data saved to {coverage_json}")
+        # Generate HTML coverage report
+        html_dir = 'coverage_html'
+        cov.html_report(directory=html_dir)
+        logger.info(f"HTML coverage report generated in {html_dir} directory")
 
-    # Log completion
-    logger.info(f"\nTest run completed. Log file: {log_file}")
-    logger.info(f"Coverage data: {coverage_json}")
+        # Save coverage data to JSON file
+        coverage_json = f'logs/coverage_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        with open(coverage_json, 'w') as f:
+            json.dump(coverage_data, f, indent=4)
+        logger.info(f"Coverage data saved to {coverage_json}")
 
-    # Return 0 if tests passed, 1 if any failed
-    return 0 if result.wasSuccessful() else 1
+        # Log completion
+        logger.info(f"\nTest run completed. Log file: {log_file}")
+        logger.info(f"Coverage data: {coverage_json}")
+
+        # Return 0 if tests passed, 1 if any failed
+        return 0 if result.wasSuccessful() else 1
+
+    finally:
+        # Stop Flask server
+        logger.info("Stopping Flask server...")
+        stop_flask_server(server_process)
 
 if __name__ == '__main__':
     sys.exit(run_tests()) 

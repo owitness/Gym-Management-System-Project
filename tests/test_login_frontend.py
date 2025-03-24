@@ -1,4 +1,6 @@
 import unittest
+import os
+import tempfile
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,13 +12,28 @@ class TestLoginFrontend(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Set up the webdriver before running tests"""
-        cls.driver = webdriver.Chrome()  # Make sure ChromeDriver is in PATH
+        # Create a unique temporary directory for Chrome profile
+        cls.temp_dir = tempfile.mkdtemp()
+        
+        # Configure Chrome options
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument(f'--user-data-dir={cls.temp_dir}')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        
+        # Initialize WebDriver with options
+        cls.driver = webdriver.Chrome(options=chrome_options)
         cls.wait = WebDriverWait(cls.driver, WAIT_TIMEOUT)
 
     @classmethod
     def tearDownClass(cls):
         """Clean up the webdriver after running tests"""
-        cls.driver.quit()
+        try:
+            cls.driver.quit()
+        finally:
+            # Clean up temporary directory
+            import shutil
+            shutil.rmtree(cls.temp_dir)
 
     def setUp(self):
         """Set up test environment before each test"""
