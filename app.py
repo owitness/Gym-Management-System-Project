@@ -7,12 +7,35 @@ from routes.memberships import memberships_bp
 #from routes.bookings import bookings_bp
 #from routes.classes import classes_bp
 from routes.payments import payments_bp
-from middleware import authenticate
+from middleware import authenticate, add_security_headers
 import jwt
 from config import SECRET_KEY
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 
 app = Flask(__name__)
-CORS(app)  # ✅ Enable CORS to allow frontend access
+
+# Configure CORS with specific options
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:5000", "http://127.0.0.1:5000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Configure logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/gym_management.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('Gym Management System startup')
 
 # ✅ Register API Routes (Make Sure Each is Registered Only ONCE)
 app.register_blueprint(auth_bp, url_prefix="/api")
@@ -22,6 +45,11 @@ app.register_blueprint(memberships_bp, url_prefix="/api")
 #app.register_blueprint(bookings_bp, url_prefix="/api")
 #app.register_blueprint(classes_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
+
+# Add security headers to all responses
+@app.after_request
+def after_request(response):
+    return add_security_headers(response)
 
 @app.route("/")
 def home():
@@ -43,32 +71,41 @@ def memberships():
 @authenticate
 def dashboard(user):
     # Check user role and redirect accordingly
-    if user["role"] == "admin":
+    if user.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
     return render_template("dashboard.html")
 
 @app.route("/admin/dashboard")
 @authenticate
 def admin_dashboard(user):
-    if user["role"] != "admin":
+    if user.get("role") != "admin":
         return redirect(url_for("dashboard"))
     return render_template("admin_dashboard.html")
 
 # Error handlers
 @app.errorhandler(401)
 def unauthorized_error(error):
+    app.logger.warning(f"Unauthorized access attempt from IP: {request.remote_addr}")
     return redirect(url_for("login"))
 
 @app.errorhandler(403)
 def forbidden_error(error):
+    app.logger.warning(f"Forbidden access attempt from IP: {request.remote_addr}")
     return jsonify({"error": "Access forbidden"}), 403
 
 @app.errorhandler(404)
 def not_found_error(error):
+    app.logger.warning(f"404 error for URL: {request.url}")
     return jsonify({"error": "Resource not found"}), 404
+
+@app.errorhandler(429)
+def too_many_requests_error(error):
+    app.logger.warning(f"Rate limit exceeded for IP: {request.remote_addr}")
+    return jsonify({"error": "Too many requests. Please try again later."}), 429
 
 @app.errorhandler(500)
 def internal_error(error):
+    app.logger.error(f"Internal server error: {str(error)}")
     return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == "__main__":

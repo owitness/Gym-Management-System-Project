@@ -1,15 +1,57 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from db import get_db_connection
 import bcrypt
 import jwt
 import datetime
 from config import SECRET_KEY
 from middleware import authenticate, admin_required
+from functools import wraps
+import re
 
 auth_bp = Blueprint("auth", __name__)
 
+# Rate limiting decorator
+def rate_limit(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        ip = request.remote_addr
+        key = f"rate_limit:{ip}:{request.endpoint}"
+        
+        # Get current timestamp
+        now = datetime.datetime.utcnow()
+        
+        # Get existing attempts from Redis or similar
+        # For now, we'll use a simple in-memory solution
+        if not hasattr(current_app, 'rate_limits'):
+            current_app.rate_limits = {}
+            
+        if key in current_app.rate_limits:
+            attempts, timestamp = current_app.rate_limits[key]
+            if (now - timestamp).seconds < 300:  # 5 minutes window
+                if attempts >= 5:  # Max 5 attempts
+                    return jsonify({"error": "Too many attempts. Please try again later."}), 429
+                current_app.rate_limits[key] = (attempts + 1, now)
+            else:
+                current_app.rate_limits[key] = (1, now)
+        else:
+            current_app.rate_limits[key] = (1, now)
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Input validation
+def validate_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def validate_password(password):
+    # At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+    pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$'
+    return re.match(pattern, password) is not None
+
 # 🔹 Register New User (Always Starts as 'non_member')
 @auth_bp.route("/register", methods=["POST"])
+@rate_limit
 def register_user():
     data = request.json
     name = data.get("name")
@@ -22,11 +64,22 @@ def register_user():
     zipcode = data.get("zipcode")
     auto_payment = data.get("auto_payment", False)
 
+    # Validate required fields
     if not all([name, email, password]):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Hash the password
-    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    # Validate email format
+    if not validate_email(email):
+        return jsonify({"error": "Invalid email format"}), 400
+
+    # Validate password strength
+    if not validate_password(password):
+        return jsonify({
+            "error": "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"
+        }), 400
+
+    # Hash the password with increased work factor for better security
+    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12))
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,13 +100,15 @@ def register_user():
         return jsonify({"message": "User registered successfully! You need to pay for a membership to become a member."}), 201
     except Exception as e:
         conn.rollback()
-        return jsonify({"error": f"Registration failed: {str(e)}"}), 500
+        current_app.logger.error(f"Registration failed: {str(e)}")
+        return jsonify({"error": "Registration failed. Please try again later."}), 500
     finally:
         cursor.close()
         conn.close()
 
 # 🔹 User Login (Returns JWT Token)
 @auth_bp.route("/login", methods=["POST"])
+@rate_limit
 def login_user():
     data = request.json
     email = data.get("email")
@@ -61,6 +116,10 @@ def login_user():
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
+
+    # Validate email format
+    if not validate_email(email):
+        return jsonify({"error": "Invalid email format"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -103,6 +162,9 @@ def login_user():
             algorithm="HS256"
         )
 
+        # Log successful login
+        current_app.logger.info(f"User {email} logged in successfully")
+
         return jsonify({
             "token": token,
             "role": user["role"],
@@ -110,7 +172,8 @@ def login_user():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": f"Login failed: {str(e)}"}), 500
+        current_app.logger.error(f"Login failed: {str(e)}")
+        return jsonify({"error": "Login failed. Please try again later."}), 500
     finally:
         cursor.close()
         conn.close()

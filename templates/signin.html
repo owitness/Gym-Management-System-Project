@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Sign In</title>
     <link href="joinstyle.css" type="text/css" rel="stylesheet">
+    <!-- Add CSRF token meta tag -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     <div class="signincontainer">
@@ -17,7 +19,8 @@
                 <label for="password">Password</label><br>
                 <input type="password" id="password" name="password" placeholder="Enter Password" required><br><br>
 
-                <button type="submit">Sign In</button>
+                <button type="submit" id="submitBtn">Sign In</button>
+                <div id="loading" style="display: none;">Loading...</div>
             </form>
             <p style="text-align: center; margin-top: 20px;">
                 Don't have an account? <a href="/signup">Sign up</a>
@@ -26,18 +29,29 @@
     </div>
 
     <script>
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
 
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ email, password })
                 });
@@ -45,9 +59,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Store the token
+                    // Store the token and user info
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('userRole', data.role);
+                    localStorage.setItem('userEmail', email);
                     
                     // Redirect based on role
                     if (data.role === 'admin') {
@@ -62,7 +77,19 @@
             } catch (error) {
                 errorMessage.textContent = 'An error occurred. Please try again later.';
                 errorMessage.style.display = 'block';
+            } finally {
+                // Reset loading state
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
             }
+        });
+
+        // Clear error message when user starts typing
+        document.getElementById('email').addEventListener('input', () => {
+            errorMessage.style.display = 'none';
+        });
+        document.getElementById('password').addEventListener('input', () => {
+            errorMessage.style.display = 'none';
         });
     </script>
 </body>
