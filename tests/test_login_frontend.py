@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from tests.test_config import TEST_SERVER_URL, TEST_USER, TEST_ADMIN, WAIT_TIMEOUT
+from .test_config import TEST_SERVER_URL, TEST_USER, TEST_ADMIN, WAIT_TIMEOUT
 
 class TestLoginFrontend(unittest.TestCase):
     @classmethod

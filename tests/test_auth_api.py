@@ -1,8 +1,8 @@
 import unittest
 import json
 import requests
-from tests.test_config import TEST_SERVER_URL, TEST_API_URL, TEST_USER, TEST_ADMIN
-from tests.test_db import setup_test_database, cleanup_test_database
+from .test_config import TEST_SERVER_URL, TEST_API_URL, TEST_USER, TEST_ADMIN
+from .test_db import setup_test_database, cleanup_test_database
 
 class TestAuthAPI(unittest.TestCase):
     @classmethod

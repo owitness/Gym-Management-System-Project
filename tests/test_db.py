@@ -1,5 +1,5 @@
 import mysql.connector
-from tests.test_config import TEST_DATABASE_CONFIG
+from .test_config import TEST_DATABASE_CONFIG
 import bcrypt
 
 def setup_test_database():
@@ -38,7 +38,7 @@ def setup_test_database():
         """)
 
         # Create test users
-        from tests.test_config import TEST_USER, TEST_ADMIN
+        from .test_config import TEST_USER, TEST_ADMIN
 
         # Hash passwords
         test_user_pw = bcrypt.hashpw(TEST_USER['password'].encode('utf-8'), bcrypt.gensalt())
