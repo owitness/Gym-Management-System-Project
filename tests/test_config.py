@@ -5,13 +5,13 @@ TEST_DATABASE_CONFIG = {
     'host': 'gym-database.clqqsuqke2sz.us-east-2.rds.amazonaws.com',
     'user': 'root',
     'password': 'COSCAdmin',
-    'database': 'gym_management_test',  # Use a separate test database
+    'database': 'gym_management',  # Use a separate test database
     'port': 3306
 }
 
 # Test user credentials
 TEST_USER = {
-    'name': 'Test User',
+    'name': 'sdfdfsdfsdffgferg',
     'email': 'test@example.com',
     'password': 'TestPassword123',
     'dob': '1990-01-01',
@@ -23,7 +23,7 @@ TEST_USER = {
 }
 
 TEST_ADMIN = {
-    'name': 'Test Admin',
+    'name': 'oifneergerg',
     'email': 'admin@example.com',
     'password': 'AdminPassword123',
     'dob': '1980-01-01',
