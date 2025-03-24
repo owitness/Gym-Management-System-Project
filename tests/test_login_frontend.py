@@ -3,12 +3,16 @@ import os
 import tempfile
 import time
 import psutil
+import shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from tests.test_config import TEST_SERVER_URL, TEST_USER, TEST_ADMIN, WAIT_TIMEOUT
+from tests.test_config import (
+    TEST_SERVER_URL, TEST_USER, TEST_ADMIN, WAIT_TIMEOUT,
+    start_test_server, stop_test_server
+)
 
 def kill_chrome_processes():
     """Kill any existing Chrome processes"""
@@ -23,11 +27,15 @@ def kill_chrome_processes():
 class TestLoginFrontend(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        """Set up the webdriver before running tests"""
+        """Set up the webdriver and test server before running tests"""
         # Kill any existing Chrome processes
         kill_chrome_processes()
         
-        # Create a unique temporary directory for Chrome profile with timestamp
+        # Start the test server
+        print("\nStarting test server...")
+        cls.server_process = start_test_server()
+        
+        # Create a unique temporary directory for Chrome profile
         timestamp = int(time.time())
         cls.temp_dir = tempfile.mkdtemp(prefix=f'chrome_profile_{timestamp}_')
         
@@ -37,32 +45,45 @@ class TestLoginFrontend(unittest.TestCase):
             chrome_options.add_argument(f'--user-data-dir={cls.temp_dir}')
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--headless')  # Run in headless mode for CI
+            chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
-            chrome_options.add_argument('--remote-debugging-port=9222')  # Enable debugging
+            chrome_options.add_argument('--remote-debugging-port=0')  # Use random port
             
             # Initialize WebDriver with options
             cls.driver = webdriver.Chrome(options=chrome_options)
             cls.wait = WebDriverWait(cls.driver, WAIT_TIMEOUT)
         except Exception as e:
-            # Clean up temp directory if setup fails
-            import shutil
-            shutil.rmtree(cls.temp_dir, ignore_errors=True)
-            kill_chrome_processes()
+            # Clean up on failure
+            cls.cleanup()
             raise e
 
     @classmethod
-    def tearDownClass(cls):
-        """Clean up the webdriver after running tests"""
+    def cleanup(cls):
+        """Clean up resources"""
         try:
             if hasattr(cls, 'driver'):
                 cls.driver.quit()
-        finally:
-            # Clean up temporary directory
-            import shutil
-            shutil.rmtree(cls.temp_dir, ignore_errors=True)
-            # Kill any remaining Chrome processes
-            kill_chrome_processes()
+        except:
+            pass
+            
+        try:
+            if hasattr(cls, 'temp_dir') and os.path.exists(cls.temp_dir):
+                shutil.rmtree(cls.temp_dir, ignore_errors=True)
+        except:
+            pass
+            
+        try:
+            if hasattr(cls, 'server_process'):
+                stop_test_server(cls.server_process)
+        except:
+            pass
+            
+        kill_chrome_processes()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up after running tests"""
+        cls.cleanup()
 
     def setUp(self):
         """Set up test environment before each test"""

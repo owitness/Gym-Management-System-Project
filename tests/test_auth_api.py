@@ -1,7 +1,10 @@
 import unittest
 import json
 import requests
-from tests.test_config import TEST_SERVER_URL, TEST_API_URL, TEST_USER, TEST_ADMIN
+from tests.test_config import (
+    TEST_SERVER_URL, TEST_API_URL, TEST_USER, TEST_ADMIN,
+    start_test_server, stop_test_server
+)
 from tests.test_db import setup_test_database, cleanup_test_database
 import time
 
@@ -12,6 +15,10 @@ class TestAuthAPI(unittest.TestCase):
         print("\nSetting up test database...")
         if not setup_test_database():
             raise Exception("Failed to set up test database")
+            
+        # Start the test server
+        print("\nStarting test server...")
+        cls.server_process = start_test_server()
             
         # Wait for server to be ready
         max_retries = 5
@@ -31,9 +38,12 @@ class TestAuthAPI(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """Clean up test database after running tests"""
+        """Clean up test database and stop server after running tests"""
         print("\nCleaning up test database...")
         cleanup_test_database()
+        
+        print("\nStopping test server...")
+        stop_test_server(cls.server_process)
 
     def setUp(self):
         """Set up test environment before each test"""
