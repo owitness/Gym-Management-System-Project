@@ -85,6 +85,10 @@ def admin_dashboard(user):
         return redirect(url_for("dashboard"))
     return render_template("admin_dashboard.html")
 
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "healthy"}), 200
+
 # Error handlers
 @app.errorhandler(401)
 def unauthorized_error(error):
