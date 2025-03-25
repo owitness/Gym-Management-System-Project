@@ -43,9 +43,15 @@ input[type=text]:focus, input[type=email]:focus, input[type=password]:focus {
 
 }
 
-button[type=button] {
+button[type=button], button[type=submit] {
     width: 30%;
     padding: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button[type=button]:hover, button[type=submit]:hover {
+    background-color: #1a1f4d;
 }
 
 .form-page {
@@ -85,7 +91,7 @@ span {
 }
 
 .header {
-    background-image: url("images/headerbackground.jpg");
+    background-image: url("../images/headerbackground.jpg");
     background-size: cover;
     background-repeat: no-repeat;
     border-top-left-radius: 25px;
@@ -115,5 +121,39 @@ hr {
     font-size: 15px;
     font-weight: bold;
     margin-top: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
 
+.joincontainer button:hover {
+    background-color: #1a1f4d;
+}
+
+.button {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 25px;
+    background-color: #292e70;
+    color: #e0f7fa;
+    border: none;
+    height: 40px;
+    width: 100px;
+    font-size: 15px;
+    font-weight: bold;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    line-height: 40px;
+}
+
+.button:hover {
+    background-color: #1a1f4d;
+    color: #e0f7fa;
+    text-decoration: none;
+}
+
+.joincontainer .button {
+    display: block;
+    margin: 20px auto;
 }

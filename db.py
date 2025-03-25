@@ -1,32 +1,23 @@
-import mysql.connector
-from config import DATABASE_CONFIG
+from db_connection import get_db, DatabaseConnectionManager
+
+# Re-export get_db for backward compatibility
+__all__ = ['get_db', 'get_db_connection']
+
+# Get the global database manager instance
+db_manager = DatabaseConnectionManager()
 
 def get_db_connection():
-    try:
-        print("🔄 Attempting to connect to the database...")  # Debugging message
-
-        conn = mysql.connector.connect(
-            host=DATABASE_CONFIG['host'],
-            user=DATABASE_CONFIG['user'],
-            password=DATABASE_CONFIG['password'],
-            database=DATABASE_CONFIG['database'],
-            port=DATABASE_CONFIG['port']
-        )
-
-        if conn.is_connected():
-            print("✅ Database Connection Successful!")
-            return conn
-        else:
-            print("❌ Database connection failed!")
-            return None
-
-    except mysql.connector.Error as e:
-        print(f"❌ Database Error: {e}")  # Print specific error message
-        return None
+    """
+    Get a database connection. This function is provided for backward compatibility.
+    It's recommended to use get_db() with a context manager instead.
+    """
+    conn, cursor = next(db_manager.get_connection().__enter__())
+    return conn
 
 if __name__ == "__main__":
-    conn = get_db_connection()
-    if conn:
-        print("✅ Test: Connection to database works!")
-    else:
-        print("❌ Test: Database connection failed!")
+    # Test the connection
+    try:
+        with get_db() as conn:
+            print("✅ Test: Connection to database works!")
+    except Exception as e:
+        print(f"❌ Test: Database connection failed! Error: {str(e)}")

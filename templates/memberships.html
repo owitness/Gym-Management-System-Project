@@ -2,21 +2,19 @@
 <html>
     <head>
         <title>Membership Packages</title>
-        <link href="style.css" type="text/css" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
     </head>
     <body>
         <div class="headcontainer">
-            <img src="images/logo.jpg" id="logo">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Gym Logo">
             <nav>
-
-                <a href="home.html">Home</a>
-                <a href="contact.html">Contact</a>
-                <a href="memberships.html">Memberships</a>
-                <a href="calendar.html">Calendar</a>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+                <a href="{{ url_for('memberships') }}">Memberships</a>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
                 
-                <button onclick="location.href='join.html'">Join Now</button>
-                <button onclick="location.href='signup.html'">Sign In</button>
-                
+                <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                <a href="{{ url_for('login') }}" class="button">Sign In</a>
             </nav>
         </div>
         <div class="memberships">
@@ -24,27 +22,27 @@
             <div>
                 <h2>Monthly</h2>
                 <p><span>$30.00 per month</span></p>
-                <button onclick="location.href='monthly.html'">Join Now</button>
+                <button onclick="location.href='{{ url_for('monthly_membership') }}'">Join Now</button>
             </div>
             <div>
                 <h2>Annual</h2>
                 <p><span>$300.00 per year</span></p>
-                <button onclick="location.href='annual.html'">Join Now</button>
+                <button onclick="location.href='{{ url_for('annual_membership') }}'">Join Now</button>
             </div>
             <div>
                 <h2>Student</h2>
                 <p><span>$20.00 per month</span></p>
-                <button onclick="location.href='student.html'">Join Now</button>
+                <button onclick="location.href='{{ url_for('student_membership') }}'">Join Now</button>
             </div>
         </div>
         <h2>Learn More</h2>
-            <p><strong>Monthly</strong><br>Enjoy flexible access with our Monthly Membership. Pay month-to-month and get 
-                full access to exclusive content, discounts, and features without any long-term 
-                commitment.</p>
-            <p><strong>Annual</strong><br>Save more with our Annual Membership! Pay for the whole year upfront and enjoy a 
-                discounted rate, along with all the benefits of full membership for 12 months.</p>
-            <p><strong>Student</strong><br>A budget-friendly option for students! Get access to all membership perks at a 
-                special discounted rate with proof of enrollment. Perfect for students looking to 
-                maximize resources on a budget. Just use your school email when signing up.</p>
+        <p><strong>Monthly</strong><br>Enjoy flexible access with our Monthly Membership. Pay month-to-month and get 
+            full access to exclusive content, discounts, and features without any long-term 
+            commitment.</p>
+        <p><strong>Annual</strong><br>Save more with our Annual Membership! Pay for the whole year upfront and enjoy a 
+            discounted rate, along with all the benefits of full membership for 12 months.</p>
+        <p><strong>Student</strong><br>A budget-friendly option for students! Get access to all membership perks at a 
+            special discounted rate with proof of enrollment. Perfect for students looking to 
+            maximize resources on a budget. Just use your school email when signing up.</p>
     </body>
 </html>

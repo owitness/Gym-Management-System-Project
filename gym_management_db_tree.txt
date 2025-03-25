@@ -1,0 +1,47 @@
+TABLE_NAME      COLUMN_NAME     COLUMN_TYPE     IS_NULLABLE     COLUMN_KEY      EXTRA
+attendance      id      int     NO      PRI     auto_increment
+attendance      member_id       int     NO      MUL
+attendance      check_in_time   timestamp       YES             DEFAULT_GENERATED
+attendance      check_out_time  timestamp       YES
+class_bookings  id      int     NO      PRI     auto_increment
+class_bookings  member_id       int     NO      MUL
+class_bookings  class_id        int     NO      MUL
+class_bookings  booking_date    timestamp       YES             DEFAULT_GENERATED
+classes id      int     NO      PRI     auto_increment
+classes class_name      varchar(100)    NO
+classes trainer_id      int     YES     MUL
+classes schedule_time   datetime        NO
+classes capacity        int     NO
+memberships     id      int     NO      PRI     auto_increment
+memberships     member_id       int     NO      MUL
+memberships     start_date      date    NO
+memberships     expiry_date     date    NO
+memberships     status  enum('active','expired','pending')      YES
+payment_methods id      int     NO      PRI     auto_increment
+payment_methods user_id int     NO      MUL
+payment_methods card_number     varchar(16)     NO
+payment_methods exp     date    NO
+payment_methods cvv     varchar(3)      NO
+payment_methods card_holder_name        varchar(100)    NO
+payment_methods saved   tinyint(1)      YES
+payments        id      int     NO      PRI     auto_increment
+payments        user_id int     NO      MUL
+payments        amount  decimal(10,2)   NO
+payments        status  enum('Completed','Pending','Failed')    YES
+payments        transaction_date        timestamp       YES             DEFAULT_GENERATED
+payments        payment_method_id       int     YES     MUL
+payments        membership_duration     int     NO
+payments        membership_expiry       date    NO
+users   id      int     NO      PRI     auto_increment
+users   role    enum('admin','trainer','member','non_member')   YES
+users   name    varchar(100)    NO
+users   dob     date    NO
+users   email   varchar(100)    NO      UNI
+users   password        varchar(255)    NO
+users   address varchar(255)    NO
+users   city    varchar(100)    NO
+users   state   varchar(50)     NO
+users   zipcode varchar(10)     NO
+users   membership_expiry       date    YES
+users   auto_payment    tinyint(1)      YES
+users   created_at      timestamp       YES             DEFAULT_GENERATED

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Dashboard - Gym Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">Gym Management System</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('payment_methods') }}">Payment Methods</a>
+            <a href="{{ url_for('attendance') }}">Attendance</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Welcome, {{ user.name }}</h1>
+        
+        <div class="dashboard-grid">
+            <!-- Membership Info -->
+            <div class="dashboard-card">
+                <h2>Your Membership</h2>
+                <div id="membership-info">
+                    <!-- Membership details will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Upcoming Classes -->
+            <div class="dashboard-card">
+                <h2>Your Classes</h2>
+                <div id="classes-list" class="scrollable-list">
+                    <!-- Booked classes will be loaded here -->
+                </div>
+                <button onclick="showClassBookingModal()" class="btn-primary">Book New Class</button>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="dashboard-card">
+                <h2>Recent Activity</h2>
+                <div id="activity-list" class="scrollable-list">
+                    <!-- Recent activity will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Booking Modal -->
+    <div id="book-class-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('book-class-modal')">&times;</span>
+            <h2>Book a Class</h2>
+            <div id="available-classes" class="scrollable-list">
+                <!-- Available classes will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load membership information
+        async function loadMembershipInfo() {
+            try {
+                const response = await fetch('/api/my-membership', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const membership = await response.json();
+                
+                const membershipInfo = document.getElementById('membership-info');
+                if (membership.error) {
+                    membershipInfo.innerHTML = `
+                        <p>No active membership found</p>
+                        <a href="/memberships" class="btn-primary">Get Membership</a>
+                    `;
+                } else {
+                    membershipInfo.innerHTML = `
+                        <div class="info-item">
+                            <p>Status: <span class="badge ${membership.status}">${membership.status}</span></p>
+                            <p>Expires: ${new Date(membership.expiry_date).toLocaleDateString()}</p>
+                            <p>Auto-renewal: ${membership.auto_payment ? 'Enabled' : 'Disabled'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading membership:', error);
+            }
+        }
+
+        // Load booked classes
+        async function loadBookedClasses() {
+            try {
+                const response = await fetch('/api/dashboard/summary', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const data = await response.json();
+                
+                const classesList = document.getElementById('classes-list');
+                if (!data.upcoming_classes || data.upcoming_classes.length === 0) {
+                    classesList.innerHTML = '<p>No upcoming classes booked</p>';
+                    return;
+                }
+                
+                classesList.innerHTML = data.upcoming_classes.map(cls => `
+                    <div class="class-item">
+                        <h3>${cls.class_name}</h3>
+                        <p>Time: ${new Date(cls.schedule_time).toLocaleString()}</p>
+                        <p>Trainer: ${cls.trainer_name}</p>
+                        <button onclick="cancelBooking(${cls.id})" class="btn-danger">Cancel</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch('/api/dashboard/summary', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const data = await response.json();
+                
+                const activityList = document.getElementById('activity-list');
+                if (!data.recent_attendance || data.recent_attendance.length === 0) {
+                    activityList.innerHTML = '<p>No recent activity</p>';
+                    return;
+                }
+                
+                activityList.innerHTML = data.recent_attendance.map(visit => `
+                    <div class="activity-item">
+                        <p>Check-in: ${new Date(visit.check_in_time).toLocaleString()}</p>
+                        ${visit.check_out_time ? 
+                            `<p>Check-out: ${new Date(visit.check_out_time).toLocaleString()}</p>` : 
+                            '<p>Currently checked in</p>'
+                        }
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading activity:', error);
+            }
+        }
+
+        // Book a class
+        async function bookClass(classId) {
+            try {
+                const response = await fetch(`/api/dashboard/book-class/${classId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    closeModal('book-class-modal');
+                    loadBookedClasses();
+                } else {
+                    const error = await response.json();
+                    alert(error.error);
+                }
+            } catch (error) {
+                console.error('Error booking class:', error);
+            }
+        }
+
+        // Cancel class booking
+        async function cancelBooking(classId) {
+            if (!confirm('Are you sure you want to cancel this class booking?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/dashboard/book-class/${classId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadBookedClasses();
+                } else {
+                    const error = await response.json();
+                    alert(error.error);
+                }
+            } catch (error) {
+                console.error('Error canceling booking:', error);
+            }
+        }
+
+        // Show class booking modal
+        async function showClassBookingModal() {
+            const modal = document.getElementById('book-class-modal');
+            const availableClasses = document.getElementById('available-classes');
+            
+            try {
+                const response = await fetch('/api/classes', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const classes = await response.json();
+                
+                availableClasses.innerHTML = classes.map(cls => `
+                    <div class="class-item">
+                        <h3>${cls.class_name}</h3>
+                        <p>Time: ${new Date(cls.schedule_time).toLocaleString()}</p>
+                        <p>Trainer: ${cls.trainer_name}</p>
+                        <p>Available spots: ${cls.capacity - cls.current_bookings}</p>
+                        <button onclick="bookClass(${cls.id})" 
+                                class="btn-primary"
+                                ${cls.capacity <= cls.current_bookings ? 'disabled' : ''}>
+                            ${cls.capacity <= cls.current_bookings ? 'Full' : 'Book'}
+                        </button>
+                    </div>
+                `).join('');
+                
+                modal.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading available classes:', error);
+            }
+        }
+
+        // Modal functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMembershipInfo();
+            loadBookedClasses();
+            loadRecentActivity();
+        });
+    </script>
+</body>
+</html> 

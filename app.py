@@ -4,9 +4,9 @@ from flask_wtf.csrf import CSRFProtect
 from routes.auth import auth_bp
 from routes.users import users_bp
 from routes.memberships import memberships_bp
-#from routes.attendance import attendance_bp
-#from routes.bookings import bookings_bp
-#from routes.classes import classes_bp
+from routes.dashboard import dashboard_bp
+from routes.admin import admin_bp
+from routes.trainer import trainer_bp
 from routes.payments import payments_bp
 from middleware import authenticate, add_security_headers
 import jwt
@@ -19,10 +19,20 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 csrf = CSRFProtect(app)
 
+# Exempt API routes from CSRF protection
+csrf.exempt(auth_bp)
+csrf.exempt(users_bp)
+csrf.exempt(memberships_bp)
+csrf.exempt(dashboard_bp)
+csrf.exempt(admin_bp)
+csrf.exempt(trainer_bp)
+csrf.exempt(payments_bp)
+
 # Configure CORS with specific options
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5000", "http://127.0.0.1:5000"],
+        "origins": ["http://localhost:5000", "http://127.0.0.1:5000", 
+                   "http://localhost:5001", "http://127.0.0.1:5001"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -40,50 +50,107 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Gym Management System startup')
 
-# ✅ Register API Routes (Make Sure Each is Registered Only ONCE)
+# ✅ Register API Routes
 app.register_blueprint(auth_bp, url_prefix="/api")
 app.register_blueprint(users_bp, url_prefix="/api")
 app.register_blueprint(memberships_bp, url_prefix="/api")
-#app.register_blueprint(attendance_bp, url_prefix="/api")
-#app.register_blueprint(bookings_bp, url_prefix="/api")
-#app.register_blueprint(classes_bp, url_prefix="/api")
+app.register_blueprint(dashboard_bp, url_prefix="/api")
+app.register_blueprint(admin_bp, url_prefix="/api")
+app.register_blueprint(trainer_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
 
 # Add security headers to all responses
 @app.after_request
 def after_request(response):
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001;"
+    )
     return add_security_headers(response)
 
+# Public routes
 @app.route("/")
 def home():
-    return render_template("home.html")  # Renders homepage
+    return render_template("home.html")
 
 @app.route("/login")
 def login():
-    return render_template("signin.html")  # Renders login page
+    return render_template("signin.html")
 
 @app.route("/signup")
-def register():
-    return render_template("signup.html")  # Renders registration page
+def signup_page():
+    return render_template("join.html")
 
 @app.route("/memberships")
 def memberships():
     return render_template("memberships.html")
 
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
+
+@app.route("/calendar")
+def calendar():
+    return render_template("calendar.html")
+
+# Membership type routes
+@app.route("/membership/monthly")
+def monthly_membership():
+    return render_template("monthly.html")
+
+@app.route("/membership/annual")
+def annual_membership():
+    return render_template("annual.html")
+
+@app.route("/membership/student")
+def student_membership():
+    return render_template("student.html")
+
+# Protected routes
 @app.route("/dashboard")
 @authenticate
 def dashboard(user):
-    # Check user role and redirect accordingly
     if user.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
-    return render_template("dashboard.html")
+    elif user.get("role") == "trainer":
+        return redirect(url_for("trainer_dashboard"))
+    return render_template("dashboard.html", user=user)
 
 @app.route("/admin/dashboard")
 @authenticate
 def admin_dashboard(user):
     if user.get("role") != "admin":
         return redirect(url_for("dashboard"))
-    return render_template("admin_dashboard.html")
+    return render_template("admin.html", user=user)
+
+@app.route("/trainer/dashboard")
+@authenticate
+def trainer_dashboard(user):
+    if user.get("role") != "trainer":
+        return redirect(url_for("dashboard"))
+    return render_template("trainer_dashboard.html", user=user)
+
+@app.route("/profile")
+@authenticate
+def profile(user):
+    return render_template("profile.html", user=user)
+
+@app.route("/classes")
+@authenticate
+def classes(user):
+    return render_template("classes.html", user=user)
+
+@app.route("/payment-methods")
+@authenticate
+def payment_methods(user):
+    return render_template("payment_methods.html", user=user)
+
+@app.route("/attendance")
+@authenticate
+def attendance(user):
+    return render_template("attendance.html", user=user)
 
 @app.route("/health")
 def health_check():

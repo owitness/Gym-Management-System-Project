@@ -2,74 +2,73 @@
 <html>
     <head>
         <title>Join Annual Membership</title>
-        <link href="joinstyle.css" type="text/css" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/joinstyle.css') }}" type="text/css" rel="stylesheet">
     </head>
     <body>
         <div class="container">
             <div class="signup">
                 <form id="registration">
-
                     <!-- First registration page -->
                     <div class="form-page active">
                         <h2>Sign Up</h2>
                         <p>Please fill in the information below to signup for the annual membership.</p>
                         <label for="fname">First Name</label></br>
-                        <input type="text" placeholder="Enter First Name"></br>
+                        <input type="text" id="fname" placeholder="Enter First Name"></br>
 
                         <label for="lname">Last Name</label></br>
-                        <input type="text" placeholder="Enter Last Name"></br>
+                        <input type="text" id="lname" placeholder="Enter Last Name"></br>
 
                         <label for="email">Email</label></br>
-                        <input type="email" placeholder="Enter Email"></br>
+                        <input type="email" id="email" placeholder="Enter Email"></br>
 
                         <label for="password">Password</label></br>
-                        <input type="password" placeholder="Enter Password"></br>
+                        <input type="password" id="password" placeholder="Enter Password"></br>
 
                         <button type="button" onClick="nextPage(1)">Next</button>
                     </div>
 
                     <!-- Second registration page -->
-                     <div class="form-page">
+                    <div class="form-page">
                         <h2>Billing Information</h2>
                         <p>Please fill in the information below to signup for the annual membership.</p>
                         <label for="cardnumber">Card Number</label>
-                        <input type="text" placeholder="Enter 16-Digit Card Number"></br>
+                        <input type="text" id="cardnumber" placeholder="Enter 16-Digit Card Number"></br>
 
                         <label for="expiration">Expiration Date (day/month)</label>
-                        <input type="text" placeholder="Enter Card Expiration Date"></br>
+                        <input type="text" id="expiration" placeholder="Enter Card Expiration Date"></br>
 
                         <label for="securitycode">Security Code</label>
-                        <input type="text" placeholder="Enter 3-Digit Security Code"></br>
+                        <input type="text" id="securitycode" placeholder="Enter 3-Digit Security Code"></br>
 
                         <label for="cardholdername">Card Holder Name</label>
-                        <input type="text" placeholder="Enter Card Holder Name"></br>
+                        <input type="text" id="cardholdername" placeholder="Enter Card Holder Name"></br>
 
                         <button type="button" onClick="nextPage(0)">Previous</button>
                         <button type="button" onClick="nextPage(2)">Next</button>
-                     </div>
+                    </div>
 
-                     <!-- Third registration page -->
-                     <div class="form-page">
+                    <!-- Third registration page -->
+                    <div class="form-page">
                         <h2>Billing Address</h2>
                         <p>Please fill in the information below to signup for the annual membership.</p>
                         <label for="streetaddress">Street Address</label>
-                        <input type="text" placeholder="Enter Street Address"></br>
+                        <input type="text" id="streetaddress" placeholder="Enter Street Address"></br>
 
                         <label for="city">City</label>
-                        <input type="text" placeholder="Enter City"></br>
+                        <input type="text" id="city" placeholder="Enter City"></br>
 
                         <label for="state">State</label>
-                        <input type="text" placeholder="Enter State"></br>
+                        <input type="text" id="state" placeholder="Enter State"></br>
 
                         <label for="zipcode">Zipcode</label>
-                        <input type="text" placeholder="Enter Zipcode"></br>
+                        <input type="text" id="zipcode" placeholder="Enter Zipcode"></br>
 
                         <button type="button" onClick="nextPage(1)">Previous</button>
                         <button type="button" onClick="nextPage(3)">Next</button>
-                     </div>
+                    </div>
 
-                     <!-- Confirmation Registration Page -->
-                     <div class="form-page">
+                    <!-- Confirmation Registration Page -->
+                    <div class="form-page">
                         <h2>Confirmation</h2>
                         <p>Please confirm information populated below is correct.</p>
                         <p>Name: <span id="confirmName"></span></p>
@@ -85,13 +84,13 @@
                         <p><span id="confirmCity"> </span><span id="confirmState">, </span><span id="confirmZipcode"></span></p>
 
                         <button type="button" onClick="nextPage(2)">Previous</button>
-                     </div>
+                        <button type="submit" onclick="submitForm()">Submit</button>
+                    </div>
                 </form>
             </div>
         </div>
 
         <script>
-
             let currentPage = 0;
 
             function nextPage(page) {
@@ -100,18 +99,28 @@
                 currentPage = page;
                 pages[currentPage].classList.add("active");
 
+                if (currentPage === 3) {
+                    updateConfirmation();
+                }
             }
 
-            if (currentPage == 3) {
-                document.getElementById("confirmName").textContent = document.getElementById("fname").value;
+            function updateConfirmation() {
+                document.getElementById("confirmName").textContent = 
+                    document.getElementById("fname").value + " " + document.getElementById("lname").value;
                 document.getElementById("confirmEmail").textContent = document.getElementById("email").value;
                 document.getElementById("confirmCardnumber").textContent = document.getElementById("cardnumber").value;
                 document.getElementById("confirmExpiration").textContent = document.getElementById("expiration").value;
                 document.getElementById("confirmSecuritycode").textContent = document.getElementById("securitycode").value;
-                document.getElementById("confirmStreetaddress").textContent = document.getElemenById("streetaddress").value;
-                document.getElementyById("confirmCity").textContent = document.getElementById("city").value;
+                document.getElementById("confirmStreetaddress").textContent = document.getElementById("streetaddress").value;
+                document.getElementById("confirmCity").textContent = document.getElementById("city").value;
                 document.getElementById("confirmState").textContent = document.getElementById("state").value;
                 document.getElementById("confirmZipcode").textContent = document.getElementById("zipcode").value;
+            }
+
+            function submitForm() {
+                // Here you would typically send the form data to your backend
+                alert("Thank you for joining! Your annual membership has been activated.");
+                window.location.href = "{{ url_for('home') }}";
             }
         </script>
     </body>

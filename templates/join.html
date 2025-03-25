@@ -2,9 +2,21 @@
 <html>
     <head>
         <title>Join Us</title>
-        <link href="joinstyle.css" type="text/css" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/joinstyle.css') }}" type="text/css" rel="stylesheet">
     </head>
     <body>
+        <div class="headcontainer">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Gym Logo">
+            <nav>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+                <a href="{{ url_for('memberships') }}">Memberships</a>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
+                
+                <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                <a href="{{ url_for('login') }}" class="button">Sign In</a>
+            </nav>
+        </div>
         <h2>Browse our plans and choose which fits you best!</h2>
         <div class="joincontainer">
             <div class="membership">
@@ -24,7 +36,7 @@
                     <li>Unlimited Access to Gym Equipment</li>
                 </ul>
                 <hr>
-                <button type="button" onClick="location.href='monthly.html'">Select</button>
+                <a href="{{ url_for('monthly_membership') }}" class="button">Select</a>
             </div>
             <div class="membership">
                 <div class="header">
@@ -43,7 +55,7 @@
                     <li>Unlimited Access to Gym Equipment</li>
                 </ul>
                 <hr>
-                <button type="button" onClick="location.href='annual.html'">Select</button>
+                <a href="{{ url_for('annual_membership') }}" class="button">Select</a>
             </div>
             <div class="membership">
                 <div class="header">
@@ -62,7 +74,7 @@
                     <li>Unlimited Access to Gym Equipment</li>
                 </ul>
                 <hr>
-                <button type="button" onClick="location.href='student.html'">Select</button>
+                <a href="{{ url_for('student_membership') }}" class="button">Select</a>
             </div>
         </div>
     </body>

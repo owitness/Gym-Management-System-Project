@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" class="admin">
 <head>
-    <link href="admin.css" type="text/css" rel="stylesheet">
-    <link href="home.html" rel="home">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" type="text/css" rel="stylesheet">
+    <link href="{{ url_for('home') }}" rel="home">
     <script>
-
         document.addEventListener("DOMContentLoaded", function() {
             let statusElements = document.querySelectorAll(".repair-status");
             statusElements.forEach(function(status) {
@@ -40,47 +39,49 @@
                 });
             });
         });
-let classes = [];
 
-function addClassToList(classData) {
-    const classList = document.getElementById("classList");
-    const li = document.createElement("li");
-    li.textContent = `${classData.className} with ${classData.instructor} on ${classData.classDate} (Capacity: ${classData.classCapacity})`;
-    classList.appendChild(li);
-}
+        let classes = [];
 
-document.getElementById("newClassForm").addEventListener("submit", function (event) {
-    event.preventDefault();
+        function addClassToList(classData) {
+            const classList = document.getElementById("classList");
+            const li = document.createElement("li");
+            li.textContent = `${classData.className} with ${classData.instructor} on ${classData.classDate} (Capacity: ${classData.classCapacity})`;
+            classList.appendChild(li);
+        }
 
-    const className = document.getElementById("className").value;
-    const instructor = document.getElementById("instructor").value;
-    const classDate = document.getElementById("classDate").value;
-    const classCapacity = document.getElementById("classCapacity").value;
+        document.getElementById("newClassForm").addEventListener("submit", function (event) {
+            event.preventDefault();
 
-    const newClass = {
-        className: className,
-        instructor: instructor,
-        classDate: classDate,
-        classCapacity: classCapacity
-    };
+            const className = document.getElementById("className").value;
+            const instructor = document.getElementById("instructor").value;
+            const classDate = document.getElementById("classDate").value;
+            const classCapacity = document.getElementById("classCapacity").value;
 
-    //Needs changed when database is set up
-    classes.push(newClass);
-    addClassToList(newClass);
+            const newClass = {
+                className: className,
+                instructor: instructor,
+                classDate: classDate,
+                classCapacity: classCapacity
+            };
 
-     // Show confirmation message
-     const confirmationMessage = document.getElementById('confirmationMessage');
-    confirmationMessage.style.display = 'block';
+            //Needs changed when database is set up
+            classes.push(newClass);
+            addClassToList(newClass);
 
-    // Hide the confirmation message after a few seconds
-    setTimeout(function() {
-        confirmationMessage.style.display = 'none';
-    }, 3000);
+            // Show confirmation message
+            const confirmationMessage = document.getElementById('confirmationMessage');
+            confirmationMessage.style.display = 'block';
 
-    // Optionally clear the form after submission
-    document.getElementById("newClassForm").reset();
-});
-//Employee script
+            // Hide the confirmation message after a few seconds
+            setTimeout(function() {
+                confirmationMessage.style.display = 'none';
+            }, 3000);
+
+            // Optionally clear the form after submission
+            document.getElementById("newClassForm").reset();
+        });
+
+        //Employee script
         let employees = [];
 
         // Function to add new employee to the list
@@ -120,16 +121,15 @@ document.getElementById("newClassForm").addEventListener("submit", function (eve
         });
 
         function classconfirmationMessage() {
-        alert("Class has been successfully added!");
+            alert("Class has been successfully added!");
         }
 
         function employeeConfirmationMessage() {
-        alert("An Employee has been successfully added!");
+            alert("An Employee has been successfully added!");
         }
     </script>
 </head>
 <body>
-
     <header>
         <h1>Gym Admin Dashboard</h1>
     </header>
@@ -149,187 +149,104 @@ document.getElementById("newClassForm").addEventListener("submit", function (eve
             <input type="number" id="classCapacity" name="classCapacity" min="1" required>
 
             <button type="submit" onclick="classconfirmationMessage()">Add Class</button>
-        </form>x
-
+        </form>
 
         <h3>Class Sizes & Open Spots</h3>
         <ul id="classList"> 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Class Name</th>
-                        <th>Instructor</th>
-                        <th>Max Capacity</th>
-                        <th>Current Size</th>
-                        <th>Open Spots</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Yoga</td>
-                        <td>Sarah</td>
-                        <td>20</td>
-                        <td>15</td>
-                        <td>5</td>
-                    </tr>
-                    <tr>
-                        <td>Jump</td>
-                        <td>John</td>
-                        <td>25</td>
-                        <td>20</td>
-                        <td>5</td>
-                    </tr>
-                    <tr>
-                        <td>Spin</td>
-                        <td>Amy</td>
-                        <td>15</td>
-                        <td>15</td>
-                        <td>0</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        </ul>
-    
-        </div>
-        <h2>Repair Orders</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Equipment</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>#101</td>
-                        <td>Water Fountain</td>
-                        <td><span class="repair-status closed">Pending</span></td>
-                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
-                    </tr>
-                    <tr>
-                        <td>#102</td>
-                        <td>Bathroom Needs Cleaned</td>
-                        <td><span class="repair-status closed">Pending</span></td>
-                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
-                    </tr>
-                    <tr>
-                        <td>#103</td>
-                        <td>Cable on Chest Fly machine needs Greased</td>
-                        <td><span class="repair-status closed">Pending</span></td>
-                        <td><a href="#" class="repair-action-btn">Mark as in progress</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-    
-
-        <h2>Memberships</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Member Name</th>
-                        <th>Membership Type</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Client 1</td>
-                        <td>Monthly</td>
-                        <td>2025-01-10</td>
-                        <td>2025-02-10</td>
-                        <td><span class="membership-status expired">Expired</span></td>
-                    </tr>
-                    <tr>
-                        <td>Client 2</td>
-                        <td>Annual</td>
-                        <td>2024-05-25</td>
-                        <td>2025-05-25</td>
-                        <td><span class="membership-status active">Active</span></td>
-                    </tr>
-                    <tr>
-                        <td>Client 3</td>
-                        <td>Monthly</td>
-                        <td>2025-02-01</td>
-                        <td>2025-03-01</td>
-                        <td><span class="membership-status active">Active</span></td>
-                    </tr>
-                </tbody>
-            </table>
-    </div>
-    <h2>Employee Management</h2>
-        <form id="newEmployeeForm">
-            <label for="employeeName">Employee Name:</label>
-            <input type="text" id="employeeName" name="employeeName" required>
-
-            <label for="employeeRole">Role:</label>
-            <input type="text" id="employeeRole" name="employeeRole" required>
-
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" name="startDate" required>
-
-            <label for="status">Status:</label>
-            <select id="status" name="status" required>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-            </select>
-
-            <button type="submit" onclick="employeeConfirmationMessage()">Add Employee</button>
-            
-        </form>
-
-
-        <h2>Employee List</h2>
-        <ul id="employeeList">
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Employee Name</th>
-                            <th>Role</th>
-                            <th>Start Date</th>
-                            <th>Employee Number</th>
-                            <th>Status</th>
+                            <th>Class Name</th>
+                            <th>Instructor</th>
+                            <th>Max Capacity</th>
+                            <th>Current Size</th>
+                            <th>Open Spots</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>John Doe</td>
-                            <td>Desk Attendant</td>
-                            <td>2025-01-10</td>
-                            <td>002</td>
-                            <td><span class="employee-status expired">Expired</span></td>
+                            <td>Yoga</td>
+                            <td>Sarah</td>
+                            <td>20</td>
+                            <td>15</td>
+                            <td>5</td>
                         </tr>
                         <tr>
-                            <td>Dohn Joe</td>
-                            <td>Maintence</td>
-                            <td>2024-05-25</td>
-                            <td>003</td>
-                            <td><span class="employee-status active">Active</span></td>
+                            <td>Jump</td>
+                            <td>John</td>
+                            <td>25</td>
+                            <td>20</td>
+                            <td>5</td>
                         </tr>
                         <tr>
-                            <td>Rohn Jom</td>
-                            <td>Trainer</td>
-                            <td>2025-02-01</td>
-                            <td>004</td>
-                            <td><span class="employee-status active">Active</span></td>
+                            <td>Spin</td>
+                            <td>Amy</td>
+                            <td>15</td>
+                            <td>15</td>
+                            <td>0</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
         </ul>
-        
+    </div>
+    <h2>Repair Orders</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Equipment</th>
+                    <th>Issue</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Treadmill #1</td>
+                    <td>Belt needs replacement</td>
+                    <td class="repair-status">Pending</td>
+                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
+                </tr>
+                <tr>
+                    <td>Weight Bench #3</td>
+                    <td>Padding torn</td>
+                    <td class="repair-status">Pending</td>
+                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
+                </tr>
+                <tr>
+                    <td>Stationary Bike #2</td>
+                    <td>Display not working</td>
+                    <td class="repair-status">Pending</td>
+                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
-</body>
+    <h2>Employee Management</h2>
+    <form id="newEmployeeForm">
+        <label for="employeeName">Employee Name:</label>
+        <input type="text" id="employeeName" name="employeeName" required>
 
+        <label for="employeeRole">Role:</label>
+        <input type="text" id="employeeRole" name="employeeRole" required>
+
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" name="startDate" required>
+
+        <label for="status">Status:</label>
+        <select id="status" name="status" required>
+            <option value="Active">Active</option>
+            <option value="On Leave">On Leave</option>
+            <option value="Terminated">Terminated</option>
+        </select>
+
+        <button type="submit" onclick="employeeConfirmationMessage()">Add Employee</button>
+    </form>
+
+    <h3>Current Employees</h3>
+    <ul id="employeeList"></ul>
 </body>
 </html>

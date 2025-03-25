@@ -2,21 +2,19 @@
 <html>
     <head>
         <title>Class Schedules and Personal Trainers</title>
-        <link href="style.css" type="text/css" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
     </head>
     <body>
         <div class="headcontainer">
-            <img src="images/logo.jpg" id="logo">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Gym Logo">
             <nav>
+                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+                <a href="{{ url_for('memberships') }}">Memberships</a>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
 
-                <a href="home.html">Home</a>
-                <a href="contact.html">Contact</a>
-                <a href="memberships.html">Memberships</a>
-                <a href="calendar.html">Calendar</a>
-
-                <button onclick="location.href='join.html'">Join Now</button>
-                <button onclick="location.href='signup.html'">Sign In</button>
-                
+                <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                <a href="{{ url_for('login') }}" class="button">Sign In</a>
             </nav>
         </div>
         <h2>February 2025</h2>
@@ -41,6 +39,6 @@
                 <div class="day">22</div><div class="day">23</div><div class="day">24</div><div class="day">25</div><div class="day">26</div><div class="day">27</div><div class="day">28</div>
             </div>
         </div>
-        <script src="calendarscript.js"></script>
+        <script src="{{ url_for('static', filename='js/calendarscript.js') }}"></script>
     </body>
 </html>
