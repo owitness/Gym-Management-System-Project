@@ -47,6 +47,9 @@ def register_user():
         if not is_valid:
             return jsonify({"error": password_error}), 400
 
+        # Hash password
+        hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+
         with get_db() as conn:
             cursor = conn.cursor(dictionary=True)
             
@@ -54,9 +57,6 @@ def register_user():
             cursor.execute("SELECT id FROM users WHERE email = %s", (data['email'],))
             if cursor.fetchone():
                 return jsonify({"error": "Email already exists"}), 400
-
-            # Hash password
-            hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
 
             # Insert new user
             cursor.execute("""

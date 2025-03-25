@@ -16,7 +16,6 @@ from logging.handlers import RotatingFileHandler
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from cache_config import cache
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -60,9 +59,6 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-# Initialize Redis cache
-cache.init_app(app)
-
 # ✅ Register API Routes
 app.register_blueprint(auth_bp, url_prefix="/api")
 app.register_blueprint(users_bp, url_prefix="/api")
@@ -79,7 +75,13 @@ def after_request(response):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         "style-src 'self' 'unsafe-inline'; "
-        "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001;"
+        "img-src 'self' data:; "
+        "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001; "
+        "font-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none';"
     )
     return add_security_headers(response)
 

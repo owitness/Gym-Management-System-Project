@@ -93,23 +93,40 @@ async function submitForm() {
 
         console.log("Sending registration data...");
 
+        // Get CSRF token from meta tag
+        const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfMetaTag) {
+            console.warn("CSRF token meta tag not found");
+            throw new Error("Security token not found. Please refresh the page and try again.");
+        }
+        const csrfToken = csrfMetaTag.content;
+        if (!csrfToken) {
+            console.warn("CSRF token content is empty");
+            throw new Error("Security token is invalid. Please refresh the page and try again.");
+        }
+
         // Register user
         const response = await fetch("/api/register", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-CSRF-Token": csrfToken
             },
             body: JSON.stringify(formData)
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Registration failed");
+        let responseData;
+        try {
+            responseData = await response.json();
+        } catch (e) {
+            throw new Error("Invalid response from server");
         }
 
-        const responseData = await response.json();
+        if (!response.ok) {
+            throw new Error(responseData.error || "Registration failed");
+        }
+
         const token = responseData.token;
-        
         if (!token) {
             throw new Error("No authentication token received");
         }
@@ -138,23 +155,23 @@ async function submitForm() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "X-CSRF-Token": csrfToken
             },
             body: JSON.stringify(paymentData)
         });
 
-        if (!paymentMethodResponse.ok) {
-            let errorMessage;
-            try {
-                const errorData = await paymentMethodResponse.json();
-                errorMessage = errorData.error;
-            } catch (e) {
-                errorMessage = "Failed to save payment method";
-            }
-            throw new Error(errorMessage);
+        let paymentMethodData;
+        try {
+            paymentMethodData = await paymentMethodResponse.json();
+        } catch (e) {
+            throw new Error("Invalid response from payment method creation");
         }
 
-        const paymentMethodData = await paymentMethodResponse.json();
+        if (!paymentMethodResponse.ok) {
+            throw new Error(paymentMethodData.error || "Failed to save payment method");
+        }
+
         if (!paymentMethodData.id) {
             throw new Error("Payment method created but no ID returned");
         }
@@ -164,7 +181,7 @@ async function submitForm() {
         // Purchase membership
         console.log("Purchasing membership...");
         
-        const membershipData = {
+        const membershipRequestData = {
             membership_type: "monthly",
             payment_method_id: paymentMethodData.id
         };
@@ -173,14 +190,21 @@ async function submitForm() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
+                "X-CSRF-Token": csrfToken
             },
-            body: JSON.stringify(membershipData)
+            body: JSON.stringify(membershipRequestData)
         });
 
+        let membershipResponseData;
+        try {
+            membershipResponseData = await membershipResponse.json();
+        } catch (e) {
+            throw new Error("Invalid response from membership purchase");
+        }
+
         if (!membershipResponse.ok) {
-            const errorData = await membershipResponse.json();
-            throw new Error(errorData.error || "Failed to purchase membership");
+            throw new Error(membershipResponseData.error || "Failed to purchase membership");
         }
 
         alert("Registration successful! Redirecting to dashboard...");

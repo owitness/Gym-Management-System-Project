@@ -1,10 +1,11 @@
-import jwt
 from flask import request, jsonify, current_app
+import jwt
 from config import SECRET_KEY
 from functools import wraps
 from db import get_db
 import time
 import logging
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -13,43 +14,73 @@ class AuthenticationError(Exception):
     pass
 
 def create_token(user_data, expiry_hours=24):
-    """Create a JWT token with standard claims"""
+    """Create a JWT token with basic claims"""
     try:
+        # Ensure all required fields are present
+        required_fields = ['id', 'email', 'role']
+        missing_fields = [field for field in required_fields if field not in user_data]
+        if missing_fields:
+            raise ValueError(f"Missing required fields for token creation: {', '.join(missing_fields)}")
+
+        # Calculate expiration time
+        exp_time = datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
+        
+        # Create simple token payload
         payload = {
             "user_id": user_data["id"],
             "email": user_data["email"],
-            "role": user_data.get("role", "non_member"),
-            "iat": int(time.time()),
-            "exp": int(time.time() + expiry_hours * 3600),
-            "iss": "gym_management_system",
-            "aud": ["gym_members", "dashboard"]
+            "role": user_data["role"],
+            "iat": int(datetime.now(timezone.utc).timestamp()),
+            "exp": int(exp_time.timestamp())
         }
-        return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+        # Encode the token
+        token = jwt.encode(
+            payload,
+            SECRET_KEY,
+            algorithm="HS256"
+        )
+        
+        return token
+
     except Exception as e:
         logger.error(f"Token creation failed: {str(e)}")
-        raise AuthenticationError("Failed to create authentication token")
+        raise AuthenticationError(f"Failed to create authentication token: {str(e)}")
 
 def verify_token(token):
     """Verify and decode JWT token"""
     try:
-        return jwt.decode(
+        if not token:
+            raise AuthenticationError("No token provided")
+
+        # Decode and verify the token
+        decoded = jwt.decode(
             token,
             SECRET_KEY,
-            algorithms=["HS256"],
-            options={
-                "verify_signature": True,
-                "verify_exp": True,
-                "verify_iat": True,
-                "verify_iss": True,
-                "verify_aud": True,
-                "require": ["exp", "iat", "iss", "aud", "user_id", "email", "role"]
-            },
-            audience=["gym_members", "dashboard"]
+            algorithms=["HS256"]
         )
+
+        # Validate token structure
+        required_fields = ['user_id', 'email', 'role', 'exp', 'iat']
+        missing_fields = [field for field in required_fields if field not in decoded]
+        if missing_fields:
+            raise AuthenticationError(f"Invalid token structure: missing {', '.join(missing_fields)}")
+
+        # Check expiration
+        exp_timestamp = decoded['exp']
+        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        if exp_timestamp < current_timestamp:
+            raise AuthenticationError("Token has expired")
+
+        return decoded
+
     except jwt.ExpiredSignatureError:
         raise AuthenticationError("Token has expired")
     except jwt.InvalidTokenError as e:
         raise AuthenticationError(f"Invalid token: {str(e)}")
+    except Exception as e:
+        logger.error(f"Token verification failed: {str(e)}")
+        raise AuthenticationError(f"Token verification failed: {str(e)}")
 
 def get_user_data(user_id):
     """Get user data from database"""
@@ -62,7 +93,6 @@ def get_user_data(user_id):
                 WHERE id = %s
             """, (user_id,))
             user_data = cursor.fetchone()
-            cursor.close()
             
             if not user_data:
                 raise AuthenticationError("User not found")
@@ -89,7 +119,8 @@ def authenticate(f):
             
             # Check if membership has expired for members
             if user_data["role"] == "member" and user_data["membership_expiry"]:
-                if user_data["membership_expiry"] < time.time():
+                current_time = datetime.now(timezone.utc)
+                if user_data["membership_expiry"] < current_time:
                     with get_db() as conn:
                         cursor = conn.cursor()
                         cursor.execute(
@@ -97,11 +128,12 @@ def authenticate(f):
                             (user_data["id"],)
                         )
                         conn.commit()
-                        cursor.close()
                         user_data["role"] = "non_member"
             
             # Create new token if close to expiry (1 hour or less remaining)
-            if decoded_token["exp"] - time.time() <= 3600:
+            exp_timestamp = decoded_token["exp"]
+            current_timestamp = int(datetime.now(timezone.utc).timestamp())
+            if exp_timestamp - current_timestamp <= 3600:  # 1 hour in seconds
                 new_token = create_token(user_data)
                 response = f(user_data, *args, **kwargs)
                 if isinstance(response, tuple):

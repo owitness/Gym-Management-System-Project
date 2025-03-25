@@ -4,7 +4,8 @@ const auth = {
     endpoints: {
         login: '/api/login',
         logout: '/api/logout',
-        profile: '/api/profile'
+        profile: '/api/profile',
+        register: '/api/register'
     },
 
     // Token management
@@ -21,15 +22,59 @@ const auth = {
         remove: () => localStorage.removeItem('user')
     },
 
+    // Get headers for authenticated requests
+    getHeaders() {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+        
+        // Add auth token if available
+        const token = this.token.get();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        return headers;
+    },
+
+    // Register user
+    async register(userData) {
+        try {
+            const response = await fetch(this.endpoints.register, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Registration failed');
+            }
+
+            // Store token and user data
+            this.token.set(data.token);
+            this.user.set(data.user);
+
+            return data;
+        } catch (error) {
+            console.error('Registration error:', error);
+            throw error;
+        }
+    },
+
     // Login user
     async login(credentials) {
         try {
             const response = await fetch(this.endpoints.login, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                },
+                headers: this.getHeaders(),
                 body: JSON.stringify(credentials)
             });
 
@@ -41,11 +86,7 @@ const auth = {
 
             // Store token and user data
             this.token.set(data.token);
-            this.user.set({
-                id: data.id,
-                email: data.email,
-                role: data.role
-            });
+            this.user.set(data.user);
 
             return data;
         } catch (error) {
@@ -57,17 +98,9 @@ const auth = {
     // Get user profile
     async getProfile() {
         try {
-            const token = this.token.get();
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
             const response = await fetch(this.endpoints.profile, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                }
+                headers: this.getHeaders()
             });
 
             const data = await response.json();
@@ -86,17 +119,9 @@ const auth = {
     // Logout user
     async logout() {
         try {
-            const token = this.token.get();
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
             const response = await fetch(this.endpoints.logout, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                }
+                headers: this.getHeaders()
             });
 
             const data = await response.json();
@@ -118,7 +143,16 @@ const auth = {
 
     // Check if user is authenticated
     isAuthenticated() {
-        return !!this.token.get();
+        const token = this.token.get();
+        if (!token) return false;
+        
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.exp * 1000 > Date.now();
+        } catch (error) {
+            console.error('Token validation error:', error);
+            return false;
+        }
     },
 
     // Get user role
@@ -130,20 +164,9 @@ const auth = {
     // Initialize authentication state
     init() {
         // Check token expiration
-        const token = this.token.get();
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.exp * 1000 < Date.now()) {
-                    // Token has expired
-                    this.token.remove();
-                    this.user.remove();
-                }
-            } catch (error) {
-                console.error('Token validation error:', error);
-                this.token.remove();
-                this.user.remove();
-            }
+        if (!this.isAuthenticated()) {
+            this.token.remove();
+            this.user.remove();
         }
 
         // Setup login form handler
@@ -166,7 +189,7 @@ const auth = {
                     const data = await this.login(credentials);
                     
                     // Redirect based on role
-                    if (data.role === 'admin') {
+                    if (data.user.role === 'admin') {
                         window.location.href = '/admin';
                     } else {
                         window.location.href = '/dashboard';

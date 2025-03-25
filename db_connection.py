@@ -102,7 +102,6 @@ class DatabaseConnectionManager:
                     'autocommit': True,
                     'pool_reset_session': True,
                     'connect_timeout': 10,  # Added timeout
-                    'pool_pre_ping': True,  # Added health check
                     'get_warnings': True    # Added warning support
                 }
                 logger.debug(f"Pool config: {pool_config}")

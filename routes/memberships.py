@@ -2,9 +2,10 @@ from flask import Blueprint, jsonify, request, current_app
 from db import get_db
 from middleware import authenticate, admin_required
 from datetime import datetime, timedelta
-from cache_config import cache, MEMBERSHIP_CACHE_KEY
+import logging
 
 memberships_bp = Blueprint("memberships", __name__)
+logger = logging.getLogger(__name__)
 
 # Membership configurations
 MEMBERSHIP_TYPES = {
@@ -27,39 +28,53 @@ MEMBERSHIP_TYPES = {
 
 # 🔹 Get all membership types and pricing
 @memberships_bp.route("/membership-types", methods=["GET"])
-@cache.cached(timeout=3600)  # Cache for 1 hour
 def get_membership_types():
-    return jsonify(MEMBERSHIP_TYPES)
+    """Get all membership types"""
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT * FROM membership_types 
+            ORDER BY price ASC
+        """)
+        
+        membership_types = cursor.fetchall()
+        cursor.close()
+        
+        return jsonify(membership_types)
+
+    except Exception as e:
+        logger.error(f"Error in get_membership_types: {str(e)}")
+        return jsonify({"error": "Failed to fetch membership types"}), 500
 
 # 🔹 Get user's current membership
 @memberships_bp.route("/memberships/my-membership", methods=["GET"])
 @authenticate
 def get_my_membership(user):
-    # Try to get from cache first
-    cache_key = MEMBERSHIP_CACHE_KEY.format(user["id"])
-    cached_membership = cache.get(cache_key)
-    
-    if cached_membership:
-        return jsonify(cached_membership)
-    
-    # If not in cache, get from database
-    with get_db() as conn:
-        cursor = conn.cursor(dictionary=True)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        # For regular users, get their membership
         cursor.execute("""
-            SELECT m.*, u.role, u.auto_payment
-            FROM memberships m
-            JOIN users u ON m.member_id = u.id
-            WHERE m.member_id = %s AND m.status = 'active'
+            SELECT * FROM memberships 
+            WHERE user_id = %s 
+            ORDER BY start_date DESC 
+            LIMIT 1
         """, (user["id"],))
         
         membership = cursor.fetchone()
         cursor.close()
-        
-        if membership:
-            # Cache the result for 5 minutes
-            cache.set(cache_key, membership, timeout=300)
-            return jsonify(membership)
-        return jsonify({"error": "No active membership found"})
+
+        if not membership:
+            return jsonify({"message": "No active membership found"}), 404
+
+        return jsonify(membership)
+
+    except Exception as e:
+        logger.error(f"Error in get_my_membership: {str(e)}")
+        return jsonify({"error": "Failed to fetch membership"}), 500
 
 # 🔹 Purchase new membership
 @memberships_bp.route("/memberships/purchase", methods=["POST"])
@@ -108,10 +123,6 @@ def purchase_membership(user):
             conn.commit()
             cursor.close()
             
-            # Clear the user's membership cache
-            cache_key = MEMBERSHIP_CACHE_KEY.format(user["id"])
-            cache.delete(cache_key)
-            
             return jsonify({
                 "message": "Membership purchased successfully!",
                 "expiry_date": expiry_date.strftime("%Y-%m-%d"),
@@ -120,17 +131,17 @@ def purchase_membership(user):
             
         except Exception as e:
             conn.rollback()
-            current_app.logger.error(f"Membership purchase failed: {str(e)}")
+            logger.error(f"Membership purchase failed: {str(e)}")
             return jsonify({"error": "Failed to process membership purchase"}), 500
 
 # 🔹 Admin: Get all memberships
 @memberships_bp.route("/admin/memberships", methods=["GET"])
 @authenticate
 @admin_required
-@cache.cached(timeout=300)  # Cache for 5 minutes
 def get_all_memberships(user):
-    with get_db() as conn:
-        cursor = conn.cursor(dictionary=True)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
         cursor.execute("""
             SELECT m.*, u.name, u.email, u.role
             FROM memberships m
@@ -140,6 +151,10 @@ def get_all_memberships(user):
         memberships = cursor.fetchall()
         cursor.close()
         return jsonify(memberships)
+
+    except Exception as e:
+        logger.error(f"Error in get_all_memberships: {str(e)}")
+        return jsonify({"error": "Failed to fetch memberships"}), 500
 
 # 🔹 Admin: Update membership status
 @memberships_bp.route("/admin/memberships/<int:membership_id>", methods=["PUT"])
@@ -171,8 +186,121 @@ def update_membership_status(user, membership_id):
         conn.commit()
         cursor.close()
         
-        # Clear relevant caches
-        cache.delete(MEMBERSHIP_CACHE_KEY.format(membership_id))
-        cache.delete('admin:memberships')
-        
         return jsonify({"message": f"Membership status updated to {new_status}"})
+
+@memberships_bp.route("/memberships", methods=["GET"])
+@authenticate
+def get_memberships(user):
+    """Get all memberships for admin or a specific user's membership"""
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        if user.get("role") == "admin":
+            cursor.execute("""
+                SELECT m.*, u.email, u.first_name, u.last_name 
+                FROM memberships m 
+                JOIN users u ON m.user_id = u.id
+                ORDER BY m.start_date DESC
+            """)
+            memberships = cursor.fetchall()
+            cursor.close()
+            return jsonify(memberships)
+
+        # For regular users, get their membership
+        cursor.execute("""
+            SELECT * FROM memberships 
+            WHERE user_id = %s 
+            ORDER BY start_date DESC 
+            LIMIT 1
+        """, (user["id"],))
+        
+        membership = cursor.fetchone()
+        cursor.close()
+
+        if not membership:
+            return jsonify({"message": "No active membership found"}), 404
+
+        return jsonify(membership)
+
+    except Exception as e:
+        logger.error(f"Error in get_memberships: {str(e)}")
+        return jsonify({"error": "Failed to fetch memberships"}), 500
+
+@memberships_bp.route("/memberships", methods=["POST"])
+@authenticate
+def create_membership(user):
+    """Create a new membership"""
+    try:
+        data = request.get_json()
+        required_fields = ["type", "duration", "price", "user_id"]
+        
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        # Check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s", (data["user_id"],))
+        if not cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "User not found"}), 404
+
+        # Check if user already has an active membership
+        cursor.execute("""
+            SELECT * FROM memberships 
+            WHERE user_id = %s AND end_date > CURDATE()
+        """, (data["user_id"],))
+        
+        if cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "User already has an active membership"}), 400
+
+        # Create new membership
+        cursor.execute("""
+            INSERT INTO memberships (user_id, type, duration, price, start_date, end_date)
+            VALUES (%s, %s, %s, %s, CURDATE(), DATE_ADD(CURDATE(), INTERVAL %s DAY))
+        """, (data["user_id"], data["type"], data["duration"], data["price"], data["duration"]))
+        
+        db.commit()
+        membership_id = cursor.lastrowid
+
+        # Fetch the created membership
+        cursor.execute("SELECT * FROM memberships WHERE id = %s", (membership_id,))
+        new_membership = cursor.fetchone()
+        cursor.close()
+
+        return jsonify(new_membership), 201
+
+    except Exception as e:
+        logger.error(f"Error in create_membership: {str(e)}")
+        return jsonify({"error": "Failed to create membership"}), 500
+
+@memberships_bp.route("/memberships/<int:membership_id>", methods=["DELETE"])
+@authenticate
+def delete_membership(user, membership_id):
+    """Delete a membership (admin only)"""
+    if user.get("role") != "admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        # Check if membership exists
+        cursor.execute("SELECT id FROM memberships WHERE id = %s", (membership_id,))
+        if not cursor.fetchone():
+            cursor.close()
+            return jsonify({"error": "Membership not found"}), 404
+
+        # Delete membership
+        cursor.execute("DELETE FROM memberships WHERE id = %s", (membership_id,))
+        db.commit()
+        cursor.close()
+
+        return jsonify({"message": "Membership deleted successfully"}), 200
+
+    except Exception as e:
+        logger.error(f"Error in delete_membership: {str(e)}")
+        return jsonify({"error": "Failed to delete membership"}), 500
