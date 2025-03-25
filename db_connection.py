@@ -93,14 +93,17 @@ class DatabaseConnectionManager:
                 
                 pool_config = {
                     'pool_name': 'mypool',
-                    'pool_size': 5,
+                    'pool_size': 20,  # Increased from 5
                     'host': '127.0.0.1',
                     'port': self._tunnel.local_bind_port,
                     'user': DATABASE_CONFIG['user'],
                     'password': DATABASE_CONFIG['password'],
                     'database': DATABASE_CONFIG['database'],
                     'autocommit': True,
-                    'pool_reset_session': True
+                    'pool_reset_session': True,
+                    'connect_timeout': 10,  # Added timeout
+                    'pool_pre_ping': True,  # Added health check
+                    'get_warnings': True    # Added warning support
                 }
                 logger.debug(f"Pool config: {pool_config}")
                 

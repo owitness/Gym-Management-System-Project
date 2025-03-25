@@ -14,6 +14,9 @@ from config import SECRET_KEY
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from cache_config import cache
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -49,6 +52,16 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Gym Management System startup')
+
+# Initialize rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Initialize Redis cache
+cache.init_app(app)
 
 # ✅ Register API Routes
 app.register_blueprint(auth_bp, url_prefix="/api")

@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, current_app
 from db import get_db
 from middleware import authenticate, admin_required
 from datetime import datetime, timedelta
+from cache_config import cache, MEMBERSHIP_CACHE_KEY
 
 memberships_bp = Blueprint("memberships", __name__)
 
@@ -26,6 +27,7 @@ MEMBERSHIP_TYPES = {
 
 # 🔹 Get all membership types and pricing
 @memberships_bp.route("/membership-types", methods=["GET"])
+@cache.cached(timeout=3600)  # Cache for 1 hour
 def get_membership_types():
     return jsonify(MEMBERSHIP_TYPES)
 
@@ -33,6 +35,14 @@ def get_membership_types():
 @memberships_bp.route("/memberships/my-membership", methods=["GET"])
 @authenticate
 def get_my_membership(user):
+    # Try to get from cache first
+    cache_key = MEMBERSHIP_CACHE_KEY.format(user["id"])
+    cached_membership = cache.get(cache_key)
+    
+    if cached_membership:
+        return jsonify(cached_membership)
+    
+    # If not in cache, get from database
     with get_db() as conn:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
@@ -44,7 +54,12 @@ def get_my_membership(user):
         
         membership = cursor.fetchone()
         cursor.close()
-        return jsonify(membership if membership else {"error": "No active membership found"})
+        
+        if membership:
+            # Cache the result for 5 minutes
+            cache.set(cache_key, membership, timeout=300)
+            return jsonify(membership)
+        return jsonify({"error": "No active membership found"})
 
 # 🔹 Purchase new membership
 @memberships_bp.route("/memberships/purchase", methods=["POST"])
@@ -92,6 +107,11 @@ def purchase_membership(user):
             
             conn.commit()
             cursor.close()
+            
+            # Clear the user's membership cache
+            cache_key = MEMBERSHIP_CACHE_KEY.format(user["id"])
+            cache.delete(cache_key)
+            
             return jsonify({
                 "message": "Membership purchased successfully!",
                 "expiry_date": expiry_date.strftime("%Y-%m-%d"),
@@ -107,6 +127,7 @@ def purchase_membership(user):
 @memberships_bp.route("/admin/memberships", methods=["GET"])
 @authenticate
 @admin_required
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def get_all_memberships(user):
     with get_db() as conn:
         cursor = conn.cursor(dictionary=True)
@@ -149,4 +170,9 @@ def update_membership_status(user, membership_id):
             
         conn.commit()
         cursor.close()
+        
+        # Clear relevant caches
+        cache.delete(MEMBERSHIP_CACHE_KEY.format(membership_id))
+        cache.delete('admin:memberships')
+        
         return jsonify({"message": f"Membership status updated to {new_status}"})
