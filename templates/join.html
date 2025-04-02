@@ -5,6 +5,7 @@
         <link href="{{ url_for('static', filename='css/joinstyle.css') }}" type="text/css" rel="stylesheet">
     </head>
     <body>
+        <!--
         <div class="headcontainer">
             <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Gym Logo">
             <nav>
@@ -17,13 +18,14 @@
                 <a href="{{ url_for('login') }}" class="button">Sign In</a>
             </nav>
         </div>
+        -->
         <h2>Browse our plans and choose which fits you best!</h2>
         <div class="joincontainer">
             <div class="membership">
                 <div class="header">
                     <h2>Monthly</h2>
                 </div>
-                <p><span>$30</span> /mo</p>
+                <p><span class="price">$30</span> /mo</p>
                 <p>Looking to try something new?</p>
                 <p>This is for you!</p>
                 <hr>
@@ -42,7 +44,7 @@
                 <div class="header">
                     <h2>Annual</h2>
                 </div>
-                <p><span>$300</span> /yr</p>
+                <p><span class="price">$300</span> /yr</p>
                 <p>Ready to commit to fitness?</p>
                 <p>Check this out!</p>
                 <hr>
@@ -61,7 +63,7 @@
                 <div class="header">
                     <h2>Student</h2>
                 </div>
-                <p><span>$20</span> /mo</p>
+                <p><span class="price">$20</span> /mo</p>
                 <p>On a tighter budget?</p>
                 <p>Sign up with your school email!</p>
                 <hr>
