@@ -113,15 +113,17 @@ def purchase_membership(user):
                     status = 'active'
             """, (user["id"], expiry_date, expiry_date))
             
-            # Update user role to member
+            # Update user role to member and set membership_expiry
             cursor.execute("""
                 UPDATE users 
-                SET role = 'member', membership_expiry = %s 
+                SET role = 'member', membership_expiry = %s, auto_payment = 1
                 WHERE id = %s
             """, (expiry_date, user["id"]))
             
             conn.commit()
             cursor.close()
+            
+            logger.info(f"Membership purchased successfully for user {user['id']}: {membership_type} until {expiry_date}")
             
             return jsonify({
                 "message": "Membership purchased successfully!",
