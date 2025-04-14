@@ -12,11 +12,18 @@
     <nav class="navbar">
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
+<<<<<<< HEAD
             <a href="{{ url_for('payment_methods') }}">Payments</a>
+=======
+            <a href="{{ url_for('calendar') }}">Calendar</a>
+            <a href="{{ url_for('profile') }}">Profile</a>
+            <a href="{{ url_for('payment_methods') }}">Payment Methods</a>
+>>>>>>> 6570f42 (Redirect now working with basic calendar)
             <a href="{{ url_for('attendance') }}">Attendance</a>
             <a href="#" onclick="logout()">Logout</a>
         </div>
     </nav>
+    
 
     <div class="container">
         <h1>Welcome, <span id="username"></span>!</h1>
@@ -58,6 +65,16 @@
     </div>
 
     <script>
+        // Save token from query parameter if provided
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+    
+        if (token) {
+            localStorage.setItem("token", token);
+            // Remove token from URL after storing it
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    
         // Load membership information
         async function loadMembershipInfo() {
             try {
@@ -67,7 +84,7 @@
                     }
                 });
                 const membership = await response.json();
-                
+    
                 const membershipInfo = document.getElementById('membership-info');
                 if (membership.error) {
                     membershipInfo.innerHTML = `
@@ -87,6 +104,9 @@
                 console.error('Error loading membership:', error);
             }
         }
+    
+        // ... (rest of your script remains unchanged)
+    
 
         // Load booked classes
         async function loadBookedClasses() {

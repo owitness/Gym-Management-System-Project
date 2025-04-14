@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from db import get_db
 from middleware import authenticate
-from datetime import datetime
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -63,6 +62,7 @@ def get_dashboard_summary(user):
             "payment_methods": payment_methods
         })
 
+
 # 🔹 Update user profile
 @dashboard_bp.route("/dashboard/profile", methods=["PUT"])
 @authenticate
@@ -94,6 +94,7 @@ def update_profile(user):
         cursor.close()
         return jsonify({"message": "Profile updated successfully"})
 
+
 # 🔹 Add/Update payment method
 @dashboard_bp.route("/dashboard/payment-methods", methods=["POST"])
 @authenticate
@@ -113,7 +114,7 @@ def add_payment_method(user):
                     (user_id, card_number, exp, cvv, card_holder_name, saved)
                 VALUES (%s, %s, %s, %s, %s, TRUE)
             """, (
-                user["id"],  # Using id from the token
+                user["id"],
                 data["card_number"],
                 data["exp"],
                 data["cvv"],
@@ -132,81 +133,24 @@ def add_payment_method(user):
         except Exception as e:
             current_app.logger.error(f"Error saving payment method: {str(e)}")
             return jsonify({"error": "Failed to save payment method"}), 500
-
-# 🔹 Book a class
-@dashboard_bp.route("/dashboard/book-class/<int:class_id>", methods=["POST"])
+        
+@dashboard_bp.route("/my-membership", methods=["GET"])
 @authenticate
-def book_class(user, class_id):
+def get_my_membership(user):
     with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Check if class exists and has capacity
-        cursor.execute("""
-            SELECT c.*, 
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id) as current_bookings
-            FROM classes c
-            WHERE c.id = %s AND c.schedule_time > NOW()
-        """, (class_id,))
-        
-        class_info = cursor.fetchone()
-        if not class_info:
-            cursor.close()
-            return jsonify({"error": "Class not found or already started"}), 404
-            
-        if class_info["current_bookings"] >= class_info["capacity"]:
-            cursor.close()
-            return jsonify({"error": "Class is full"}), 400
-        
-        # Check if user already booked this class
-        cursor.execute("""
-            SELECT id FROM class_bookings 
-            WHERE member_id = %s AND class_id = %s
-        """, (user["id"], class_id))
-        
-        if cursor.fetchone():
-            cursor.close()
-            return jsonify({"error": "You have already booked this class"}), 400
-        
-        # Book the class
-        cursor.execute("""
-            INSERT INTO class_bookings (member_id, class_id)
-            VALUES (%s, %s)
-        """, (user["id"], class_id))
-        
-        conn.commit()
-        cursor.close()
-        return jsonify({"message": "Class booked successfully"})
+        cursor = conn.cursor(dictionary=True)
 
-# 🔹 Cancel class booking
-@dashboard_bp.route("/dashboard/book-class/<int:class_id>", methods=["DELETE"])
-@authenticate
-def cancel_class_booking(user, class_id):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Check if class hasn't started yet
         cursor.execute("""
-            SELECT c.schedule_time
-            FROM class_bookings cb
-            JOIN classes c ON cb.class_id = c.id
-            WHERE cb.member_id = %s AND cb.class_id = %s
-        """, (user["id"], class_id))
-        
-        class_info = cursor.fetchone()
-        if not class_info:
-            cursor.close()
-            return jsonify({"error": "Booking not found"}), 404
-            
-        if class_info["schedule_time"] <= datetime.now():
-            cursor.close()
-            return jsonify({"error": "Cannot cancel a class that has already started"}), 400
-        
-        # Cancel the booking
-        cursor.execute("""
-            DELETE FROM class_bookings 
-            WHERE member_id = %s AND class_id = %s
-        """, (user["id"], class_id))
-        
-        conn.commit()
+            SELECT m.*, u.auto_payment
+            FROM memberships m
+            JOIN users u ON m.member_id = u.id
+            WHERE m.member_id = %s AND m.status = 'active'
+        """, (user["id"],))
+
+        membership = cursor.fetchone()
         cursor.close()
-        return jsonify({"message": "Class booking cancelled successfully"}) 
+
+        if not membership:
+            return jsonify({"error": "No active membership found"}), 404
+
+        return jsonify(membership)

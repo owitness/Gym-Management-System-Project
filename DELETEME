@@ -1,0 +1,40 @@
+import paramiko
+import os
+
+# Use your verified PEM file path
+pem_path = r"C:\Users\valla\Downloads\main.pem"
+hostname = "ec2-18-191-239-86.us-east-2.compute.amazonaws.com"
+username = "ubuntu"  # Make sure this matches your manual SSH login
+
+print("Loading key from:", pem_path)
+print("File exists:", os.path.exists(pem_path))
+
+try:
+    # Load the RSA private key
+    key = paramiko.RSAKey.from_private_key_file(pem_path)
+    print("Key loaded successfully.")
+    print("Fingerprint (MD5):", key.get_fingerprint().hex())
+
+    # Initialize SSH client
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    print("Attempting connection to EC2...")
+    ssh.connect(
+        hostname=hostname,
+        username=username,
+        pkey=key,
+        allow_agent=False,
+        look_for_keys=False,
+    )
+
+    print("Connected successfully!")
+    stdin, stdout, stderr = ssh.exec_command("uname -a")
+    print("Remote output:", stdout.read().decode())
+
+    ssh.close()
+
+except paramiko.AuthenticationException:
+    print("Authentication failed. Check the key, username, or EC2 settings.")
+except Exception as e:
+    print("Other error:", str(e))

@@ -198,8 +198,24 @@ async function submitForm(membershipType) {
         const membershipResult = await membershipResponse.json();
         console.log("Membership purchased successfully:", membershipResult);
 
-        alert('Registration successful! Redirecting to dashboard...');
-        window.location.href = '/dashboard';
+        
+        const msg = document.createElement('div');
+        msg.textContent = 'Registration successful! Redirecting to dashboard...';
+        msg.style.position = 'fixed';
+        msg.style.top = '20px';
+        msg.style.left = '50%';
+        msg.style.transform = 'translateX(-50%)';
+        msg.style.backgroundColor = '#ADD8E6';
+        msg.style.color = 'white';
+        msg.style.padding = '10px 20px';
+        msg.style.borderRadius = '5px';
+        msg.style.zIndex = 1000;
+        document.body.appendChild(msg);
+
+        setTimeout(() => {
+            window.location.href = `/redirect-dashboard?token=${token}`;
+        }, 1000);
+        
 
     } catch (error) {
         console.error('Error:', error);

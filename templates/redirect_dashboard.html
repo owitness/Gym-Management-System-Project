@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting...</title>
+    <meta charset="UTF-8">
+    <script>
+        // Store token in localStorage and redirect
+        const token = "{{ token }}";
+        if (token) {
+            localStorage.setItem("token", token);
+            window.location.href = "/dashboard";
+        } else {
+            alert("Missing token. Redirect failed.");
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecting to your dashboard...</p>
+</body>
+</html>

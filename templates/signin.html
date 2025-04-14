@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Sign In</title>
     <link href="{{ url_for('static', filename='css/joinstyle.css') }}" type="text/css" rel="stylesheet">
-    <!-- Add CSRF token meta tag -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
@@ -28,50 +27,59 @@
     </div>
 
     <script>
-        async function handleSubmit(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                const response = await fetch('{{ url_for("login") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Store the token
-                    localStorage.setItem('token', data.token);
-                    
-                    // Redirect based on role
-                    if (data.role === 'admin') {
-                        window.location.href = '{{ url_for("admin_dashboard") }}';
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+    
+            loginForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                console.log("Submitting login form...");
+    
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+    
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+    
+                    const data = await response.json();
+                    console.log("Response:", data);
+    
+                    if (response.ok) {
+                        localStorage.setItem('token', data.token);
+    
+                        // Redirect
+                        if (data.user.role === 'admin') {
+                            window.location.href = '/admin/dashboard';
+                        } else {
+                            window.location.href = `/redirect-dashboard?token=${data.token}`;
+                        }
                     } else {
-                        window.location.href = '{{ url_for("dashboard") }}';
+                        const errorMsg = data.error || "Login failed";
+                        document.getElementById("error-message").textContent = errorMsg;
+                        document.getElementById("error-message").style.display = "block";
                     }
-                } else {
-                    alert(data.error || 'Login failed');
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred during login');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred during login');
-            }
-        }
-
-        // Clear error message when user starts typing
-        document.getElementById('email').addEventListener('input', () => {
-            errorMessage.style.display = 'none';
-        });
-        document.getElementById('password').addEventListener('input', () => {
-            errorMessage.style.display = 'none';
+            });
+    
+            // Clear error message
+            document.getElementById('email').addEventListener('input', () => {
+                document.getElementById("error-message").style.display = 'none';
+            });
+            document.getElementById('password').addEventListener('input', () => {
+                document.getElementById("error-message").style.display = 'none';
+            });
         });
     </script>
+    
+    
 </body>
 </html>

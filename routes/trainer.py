@@ -15,7 +15,7 @@ def trainer_required(f):
     return wrapper
 
 # 🔹 Get trainer's classes
-@trainer_bp.route("/classes", methods=["GET"])
+@trainer_bp.route("/trainer/classes", methods=["GET"])
 @authenticate
 @trainer_required
 def get_trainer_classes(user):

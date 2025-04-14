@@ -140,6 +140,7 @@ def login_user():
             return jsonify({
                 "message": "Login successful",
                 "token": token,
+                "role": user['role'],
                 "user": {
                     "id": user['id'],
                     "email": user['email'],

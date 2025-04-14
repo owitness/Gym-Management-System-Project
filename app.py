@@ -8,7 +8,8 @@ from routes.dashboard import dashboard_bp
 from routes.admin import admin_bp
 from routes.trainer import trainer_bp
 from routes.payments import payments_bp
-from middleware import authenticate, add_security_headers
+from routes.classes import class_schedule_bp
+from middleware import authenticate, add_security_headers, verify_token, get_user_data
 import jwt
 from config import SECRET_KEY
 import logging
@@ -67,13 +68,14 @@ app.register_blueprint(dashboard_bp, url_prefix="/api")
 app.register_blueprint(admin_bp, url_prefix="/api")
 app.register_blueprint(trainer_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
+app.register_blueprint(class_schedule_bp, url_prefix="/api")
 
 # Add security headers to all responses
 @app.after_request
 def after_request(response):
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001; "
@@ -83,7 +85,8 @@ def after_request(response):
         "form-action 'self'; "
         "frame-ancestors 'none';"
     )
-    return add_security_headers(response)
+    return response
+
 
 # Public routes
 @app.route("/")
@@ -170,6 +173,19 @@ def attendance(user):
 @app.route("/health")
 def health_check():
     return jsonify({"status": "healthy"}), 200
+
+@app.route('/redirect-dashboard')
+def redirect_dashboard_with_token():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Missing token'}), 400
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        return render_template("dashboard.html", user=user)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
+
 
 # Error handlers
 @app.errorhandler(401)

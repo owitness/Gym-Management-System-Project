@@ -102,58 +102,36 @@ def get_user_data(user_id):
         raise AuthenticationError("Failed to retrieve user data")
 
 def authenticate(f):
-    """Authentication decorator with automatic token refresh"""
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def decorated(*args, **kwargs):
+        from flask import request
+
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split()[1]
+
+        if not token:
+            print("No token provided")
+            return jsonify({'error': 'Authentication token is missing'}), 401
+
         try:
-            # Get token from Authorization header
-            auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
-                raise AuthenticationError("Missing or invalid authorization header")
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            user_id = data['user_id']
+            # Print the user_id we're authenticating
+            print(f"Authenticating user_id {user_id}")
+            user_data = get_user_data(user_id)
+            if not user_data:
+                print("No user data found for token")
+                raise AuthenticationError("Invalid user")
 
-            token = auth_header.split(" ")[1]
-            decoded_token = verify_token(token)
-            
-            # Get fresh user data from database
-            user_data = get_user_data(decoded_token["user_id"])
-            
-            # Check if membership has expired for members
-            if user_data["role"] == "member" and user_data["membership_expiry"]:
-                current_time = datetime.now(timezone.utc)
-                if user_data["membership_expiry"] < current_time:
-                    with get_db() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute(
-                            "UPDATE users SET role = 'non_member' WHERE id = %s",
-                            (user_data["id"],)
-                        )
-                        conn.commit()
-                        user_data["role"] = "non_member"
-            
-            # Create new token if close to expiry (1 hour or less remaining)
-            exp_timestamp = decoded_token["exp"]
-            current_timestamp = int(datetime.now(timezone.utc).timestamp())
-            if exp_timestamp - current_timestamp <= 3600:  # 1 hour in seconds
-                new_token = create_token(user_data)
-                response = f(user_data, *args, **kwargs)
-                if isinstance(response, tuple):
-                    response_data, status_code = response
-                    response_data["new_token"] = new_token
-                    return jsonify(response_data), status_code
-                else:
-                    response.headers["X-New-Token"] = new_token
-                    return response
-            
             return f(user_data, *args, **kwargs)
-            
-        except AuthenticationError as e:
-            logger.warning(f"Authentication failed: {str(e)}")
-            return jsonify({"error": str(e)}), 401
-        except Exception as e:
-            logger.error(f"Unexpected error in authentication: {str(e)}")
-            return jsonify({"error": "Authentication failed"}), 401
 
-    return wrapper
+        except Exception as e:
+            print(f"Authentication failed: {e}")
+            return jsonify({'error': 'Authentication failed'}), 401
+
+    return decorated
+
 
 def admin_required(f):
     @wraps(f)
