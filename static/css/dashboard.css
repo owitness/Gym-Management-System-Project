@@ -1,0 +1,72 @@
+body {
+    background-color: #fcf7f8;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    color: #292e70;
+}
+
+.navbar {
+    height: 75px;
+    background-color: white;
+}
+
+.nav-links {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    height: 75px;
+}
+
+a {
+    text-decoration: none;
+    color: #292e70;
+    padding: 10px;
+    width: 125px;
+    text-align: center;
+    font-weight: bold;
+
+}
+
+a:hover {
+    background-color: #292e70;
+    color: #c6e5fe;
+    opacity: 0.5;
+    border-radius: 25px;
+}
+
+h1 {
+    text-align: center;
+    width: 100%;
+}
+
+h2 {
+    text-align: center;
+}
+ 
+.dashboard-grid, .payment-grid, .profile-grid, .attendance-grid {
+    display: grid;
+    gap: 40px;
+    grid-template-columns: repeat(3, 1fr);
+    width: fit-content;              /* makes the grid shrink to fit its content */
+    margin: 0 auto;
+}
+
+.dashboard-card, .payment-card, .payment-card-extended, .profile-card, .attendance-card {
+    background-image: linear-gradient(#c6e5fe, white);
+    height: 300px;
+    width: 350px;
+    padding: 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.payment-card-extended {
+    height: 375px;
+}
+
+.btn-primary {
+    background-color: #292e70;
+    color: white;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}

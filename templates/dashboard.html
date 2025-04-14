@@ -4,58 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Dashboard - Gym Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
+    <script src="../static/js/calendarscript.js"></script>
+    <!-- <link href="{{ url_for('static', filename='css/dashboard.css') }}" type="text/css" rel="stylesheet"> -->
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">Gym Management System</div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
-            <a href="{{ url_for('profile') }}">Profile</a>
-            <a href="{{ url_for('payment_methods') }}">Payment Methods</a>
+            <a href="{{ url_for('payment_methods') }}">Payments</a>
             <a href="{{ url_for('attendance') }}">Attendance</a>
             <a href="#" onclick="logout()">Logout</a>
         </div>
     </nav>
 
     <div class="container">
-        <h1>Welcome, {{ user.name }}</h1>
+        <h1>Welcome, <span id="username"></span>!</h1>
         
         <div class="dashboard-grid">
             <!-- Membership Info -->
+
+            <div class="dashboard-card">
+                <h2>Personal Info</h2>
+                <div id="personal-info">
+                    <!-- Personal information will be loaded here -->
+                    <p>Full Name: <span id="username"></span></p>
+                    <p>Email: <span id="email"></span></p>
+                    <p>Address: <span id="address"></span></p>
+                </div>
+            </div>
+
             <div class="dashboard-card">
                 <h2>Your Membership</h2>
                 <div id="membership-info">
                     <!-- Membership details will be loaded here -->
+                     <p>Membership Status: <span id="membstatus"></span></p>
+                     <p>Membership Type: <span id="membtype"></span></p>
+                     <p>Membership Expiration: <span id="expiration"></span></p>
                 </div>
             </div>
 
             <!-- Upcoming Classes -->
             <div class="dashboard-card">
-                <h2>Your Classes</h2>
+                <h2>Upcoming Classes & Trainings</h2>
                 <div id="classes-list" class="scrollable-list">
                     <!-- Booked classes will be loaded here -->
+                     <p>Upcoming Classes: </p>
+                     <p>Upcoming Training Sessions: </p>
                 </div>
                 <button onclick="showClassBookingModal()" class="btn-primary">Book New Class</button>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="dashboard-card">
-                <h2>Recent Activity</h2>
-                <div id="activity-list" class="scrollable-list">
-                    <!-- Recent activity will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Class Booking Modal -->
-    <div id="book-class-modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('book-class-modal')">&times;</span>
-            <h2>Book a Class</h2>
-            <div id="available-classes" class="scrollable-list">
-                <!-- Available classes will be loaded here -->
             </div>
         </div>
     </div>

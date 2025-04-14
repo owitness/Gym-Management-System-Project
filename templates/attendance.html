@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance - Gym Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">Gym Management System</div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('profile') }}">Profile</a>
-            <a href="{{ url_for('payment_methods') }}">Payment Methods</a>
+            <a href="{{ url_for('payment_methods') }}">Payments</a>
             <a href="{{ url_for('attendance') }}" class="active">Attendance</a>
             <a href="#" onclick="logout()">Logout</a>
         </div>

@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Methods - Gym Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
+    <script src="../static/js/payment-methods.js"></script>
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">Gym Management System</div>
         <div class="nav-links">
             <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('profile') }}">Profile</a>
-            <a href="{{ url_for('payment_methods') }}" class="active">Payment Methods</a>
+            <a href="{{ url_for('payment_methods') }}" class="active">Payments</a>
             <a href="{{ url_for('attendance') }}">Attendance</a>
             <a href="#" onclick="logout()">Logout</a>
         </div>
@@ -27,15 +26,27 @@
                 <h2>Saved Payment Methods</h2>
                 <div id="payment-methods-list" class="scrollable-list">
                     <!-- Saved payment methods will be loaded here -->
+                     <p>Card Holder: <span id="cardholder"></span></p>
+                     <p>Card Number: <span id="cardnumber"></span></p>
+                     <p>Expiration Date: <span id="expiration"></span></p>
                 </div>
-                <button onclick="showAddPaymentModal()" class="btn-primary">Add New Payment Method</button>
+                <button onclick="scrollToAddPayment()" class="btn-primary">Add New Payment Method</button>
             </div>
 
             <!-- Payment History -->
-            <div class="payment-card">
+            <div class="payment-card-extended">
                 <h2>Payment History</h2>
                 <div id="payment-history" class="scrollable-list">
                     <!-- Payment history will be loaded here -->
+                     <p><strong>Recent Payment</strong></p>
+                     <p>Date: <span id="recentDate"></span></p>
+                     <p>Amount: <span id="recentAmount"></span></p>
+                     <p>Payment Method: <span id="recentMethod"></span></p>
+                     <p><strong>Upcoming Payment</strong></p>
+                     <p>Date: <span id="upcomingDate"></span></p>
+                     <p>Amount: <span id="upcomingAmount"></span></p>
+                     <p>Payment Method: <span id="upcomingMethod"></span></p>
+                     <button onclick="scrollToPaymentsHistory()" class="btn-primary">View Full Payment History</button>
                 </div>
             </div>
 
@@ -49,13 +60,13 @@
                                 <input type="checkbox" id="auto-payment-enabled" name="auto_payment">
                                 Enable automatic membership renewal
                             </label>
-                        </div>
+                        </div><br>
                         <div class="form-group">
                             <label for="default-payment-method">Default Payment Method:</label>
                             <select id="default-payment-method" name="default_payment_method">
                                 <option value="">Select a payment method</option>
                             </select>
-                        </div>
+                        </div><br>
                         <button type="submit" class="btn-primary">Save Settings</button>
                     </form>
                 </div>
@@ -64,9 +75,9 @@
     </div>
 
     <!-- Add Payment Method Modal -->
-    <div id="add-payment-modal" class="modal">
+    <div id="addPaymentMethod" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('add-payment-modal')">&times;</span>
+            <span class="close" onclick="closeModal('add-payment-modal')"></span>
             <h2>Add Payment Method</h2>
             <form id="add-payment-form" onsubmit="addPaymentMethod(event)">
                 <div class="form-group">
@@ -76,7 +87,7 @@
                 </div>
                 <div class="form-group">
                     <label for="card-holder">Card Holder Name:</label>
-                    <input type="text" id="card-holder" name="card_holder_name" required>
+                    <input type="text" id="card-holder" name="card_holder_name" required placeholder="Name">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -100,6 +111,11 @@
             </form>
         </div>
     </div>
+    <!-- View Full Payment History -->
+     <div id="paymentHistory">
+        <h2>Full Payment History</h2>
+
+     </div>
 
     <script>
         // Load saved payment methods
