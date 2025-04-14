@@ -1,16 +1,14 @@
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request
 from db import get_db
 from middleware import authenticate
 from datetime import datetime
 
 class_schedule_bp = Blueprint("class_schedule", __name__)
 
-# ✅ Get all upcoming classes
+# Get all upcoming classes
 @class_schedule_bp.route("/classes", methods=["GET"])
 @authenticate
 def get_classes(user):
-    print("Connected to DB and running class fetch...")
-
     with get_db() as conn:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
@@ -30,15 +28,13 @@ def get_classes(user):
         """)
         return jsonify(cursor.fetchall())
 
-
-# Book a class
 # Book a class
 @class_schedule_bp.route("/classes/<int:class_id>/book", methods=["POST"])
 @authenticate
-def book_class(user, class_id):
-    print("IM IN HERE")
+def book_class(class_id, user=None):
     try:
-        print(f"Booking request received for class {class_id} by user {user['id']}")
+        if not user or "id" not in user:
+            return jsonify({"error": "Unauthorized user"}), 401
 
         with get_db() as conn:
             cursor = conn.cursor()
@@ -49,25 +45,19 @@ def book_class(user, class_id):
                 WHERE member_id = %s AND class_id = %s
             """, (user["id"], class_id))
             already_booked = cursor.fetchone()[0]
-            print(f"Existing bookings found: {already_booked}")
             if already_booked > 0:
-                print("User already booked this class")
                 return jsonify({"error": "You already booked this class"}), 400
 
             # Check if class exists and has space
             cursor.execute("SELECT capacity FROM classes WHERE id = %s", (class_id,))
             result = cursor.fetchone()
-            print(f"Class lookup result: {result}")
             if not result:
-                print("Class not found")
                 return jsonify({"error": "Class not found"}), 404
 
             capacity = result[0]
             cursor.execute("SELECT COUNT(*) FROM class_bookings WHERE class_id = %s", (class_id,))
             booked = cursor.fetchone()[0]
-            print(f"Booked seats: {booked} / {capacity}")
             if booked >= capacity:
-                print("Class is full")
                 return jsonify({"error": "Class is full"}), 400
 
             # Insert booking
@@ -77,17 +67,12 @@ def book_class(user, class_id):
             """, (user["id"], class_id))
 
             conn.commit()
-            print("Booking successful")
             return jsonify({"message": "Class booked successfully!"}), 200
 
     except Exception as e:
-        print(f"Unexpected error during booking: {e}")
-        return jsonify({"error": "Booking failed due to an unexpected error."}), 500
+        return jsonify({"error": f"Booking failed: {str(e)}"}), 500
 
-
-
-
-#  Cancel class booking
+# Cancel class booking
 @class_schedule_bp.route("/classes/<int:class_id>/cancel", methods=["DELETE"])
 @authenticate
 def cancel_class_booking(user, class_id):

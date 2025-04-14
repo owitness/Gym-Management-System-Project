@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchClasses() {
         const token = localStorage.getItem("token");
         if (!token) {
-            console.warn("No token found in localStorage.");
             return [];
         }
 
@@ -25,14 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                console.error("Failed to fetch classes:", error);
                 return [];
             }
 
             return await response.json();
         } catch (error) {
-            console.error("Error fetching classes:", error);
             return [];
         }
     }
@@ -161,8 +157,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Moved to global scope so onclick="bookClass(...)" works in HTML
 window.bookClass = async (classId) => {
     const token = localStorage.getItem('token');
-    if (!token) return alert("Please sign in first.");
-
+    if (!token) {
+        alert("Please sign in first.");
+        return;
+    }
+    
     try {
         const res = await fetch(`/api/classes/${classId}/book`, {
             method: 'POST',
@@ -180,7 +179,6 @@ window.bookClass = async (classId) => {
             }
         }
     } catch (error) {
-        console.error("Booking error:", error);
         alert("Booking failed. Please check your connection or try again later.");
     }
 };

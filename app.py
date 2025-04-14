@@ -30,6 +30,7 @@ csrf.exempt(dashboard_bp)
 csrf.exempt(admin_bp)
 csrf.exempt(trainer_bp)
 csrf.exempt(payments_bp)
+csrf.exempt(class_schedule_bp)
 
 # Configure CORS with specific options
 CORS(app, resources={
