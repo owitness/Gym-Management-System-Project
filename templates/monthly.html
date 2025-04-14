@@ -6,7 +6,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <link href="{{ url_for('static', filename='css/joinstyle.css') }}" type="text/css" rel="stylesheet">
-        <script src="{{ url_for('static', filename='js/monthly.js') }}" defer></script>
     </head>
     <body>
         <div class="container">
@@ -86,7 +85,7 @@
                         <p>Expiration: <span id="confirmExpiration"></span></p>
                         <p>Card Holder: <span id="confirmCardholder"></span></p></br>
 
-                        <p><strong>Billing Address:</strong</p>
+                        <p><strong>Billing Address:</strong></p>
                         <p><span id="confirmStreetaddress"></span></p>
                         <p><span id="confirmCity"></span>, <span id="confirmState"></span> <span id="confirmZipcode"></span></p>
 
@@ -96,5 +95,9 @@
                 </form>
             </div>
         </div>
+        <script>
+            window.membershipType = 'monthly';
+        </script>
+        <script src="{{ url_for('static', filename='js/membership.js') }}"></script>
     </body>
 </html>
