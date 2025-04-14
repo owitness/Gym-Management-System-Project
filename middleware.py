@@ -107,31 +107,30 @@ def authenticate(f):
         from flask import request
 
         token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split()[1]
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            parts = auth_header.split(" ")
+            if len(parts) == 2:
+                token = parts[1]
 
         if not token:
-            print("No token provided")
             return jsonify({'error': 'Authentication token is missing'}), 401
 
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             user_id = data['user_id']
-            # Print the user_id we're authenticating
-            print(f"Authenticating user_id {user_id}")
             user_data = get_user_data(user_id)
             if not user_data:
-                print("No user data found for token")
-                raise AuthenticationError("Invalid user")
+                raise Exception("Invalid user")
 
-            return f(user_data, *args, **kwargs)
+            # Inject user into kwargs to avoid positional mismatch
+            kwargs['user'] = user_data
+            return f(*args, **kwargs)
 
         except Exception as e:
-            print(f"Authentication failed: {e}")
             return jsonify({'error': 'Authentication failed'}), 401
 
     return decorated
-
 
 def admin_required(f):
     @wraps(f)
