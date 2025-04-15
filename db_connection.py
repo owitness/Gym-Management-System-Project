@@ -31,7 +31,7 @@ class DatabaseConnectionManager:
     def _initialize(self):
         self._tunnel = None
         self._pool = None
-        self._pem_path = r"C:\Users\makennahockenberry\Downloads\main.pem"
+        self._pem_path = r"C:\Users\valla\Downloads\main.pem"
         self._last_connection_time = 0
         self._connection_timeout = 3600
         self._connections = []

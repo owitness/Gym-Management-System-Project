@@ -17,6 +17,10 @@ from logging.handlers import RotatingFileHandler
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+from generate_weekly_classes import generate_weekly_classes  # import your function
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -213,6 +217,26 @@ def too_many_requests_error(error):
 def internal_error(error):
     app.logger.error(f"Internal server error: {str(error)}")
     return jsonify({"error": "Internal server error"}), 500
+
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    
+    # Schedule it to run every Sunday at 12:00 AM
+    scheduler.add_job(
+        func=generate_weekly_classes,
+        trigger="cron",
+        day_of_week="sun",
+        hour=0,
+        minute=0,
+        id="weekly_class_generator",
+        replace_existing=True
+    )
+    scheduler.start()
+    print("Scheduler started: weekly class generator active.")
+
+# Start it
+start_scheduler()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
