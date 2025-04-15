@@ -9,7 +9,7 @@ from routes.admin import admin_bp
 from routes.trainer import trainer_bp
 from routes.payments import payments_bp
 from routes.classes import class_schedule_bp
-from middleware import authenticate, add_security_headers, verify_token, get_user_data
+from middleware import authenticate, add_security_headers, verify_token, get_user_data, create_token
 import jwt
 from config import SECRET_KEY
 import logging
@@ -20,6 +20,7 @@ from flask_limiter.util import get_remote_address
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 from generate_weekly_classes import generate_weekly_classes  # import your function
+from routes.attendance import attendance_bp
 
 
 app = Flask(__name__)
@@ -35,6 +36,7 @@ csrf.exempt(admin_bp)
 csrf.exempt(trainer_bp)
 csrf.exempt(payments_bp)
 csrf.exempt(class_schedule_bp)
+csrf.exempt(attendance_bp)
 
 # Configure CORS with specific options
 CORS(app, resources={
@@ -74,6 +76,7 @@ app.register_blueprint(admin_bp, url_prefix="/api")
 app.register_blueprint(trainer_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
 app.register_blueprint(class_schedule_bp, url_prefix="/api")
+app.register_blueprint(attendance_bp, url_prefix="/api")
 
 # Add security headers to all responses
 @app.after_request
@@ -134,10 +137,10 @@ def student_membership():
 
 # Protected routes
 @app.route("/dashboard")
-def dashboard():
-    token = request.args.get('token')
-    if not token:
-        return jsonify({'error': 'Authentication token is missing'}), 401
+@authenticate
+def dashboard(user):
+    token = create_token(user)
+    return render_template("dashboard.html", token=token)
     
     try:
         decoded = verify_token(token)
