@@ -18,6 +18,6 @@ if __name__ == "__main__":
     # Test the connection
     try:
         with get_db() as conn:
-            print("✅ Test: Connection to database works!")
+            print("Test: Connection to database works!")
     except Exception as e:
-        print(f"❌ Test: Database connection failed! Error: {str(e)}")
+        print(f"Test: Database connection failed! Error: {str(e)}")
