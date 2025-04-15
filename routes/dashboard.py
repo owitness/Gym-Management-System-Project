@@ -64,35 +64,35 @@ def get_dashboard_summary(user):
 
 
 # 🔹 Update user profile
-@dashboard_bp.route("/dashboard/profile", methods=["PUT"])
+@dashboard_bp.route("/dashboard/profile", methods=["GET"])
 @authenticate
-def update_profile(user):
-    data = request.json
-    allowed_fields = ["name", "address", "city", "state", "zipcode", "auto_payment"]
-    
-    # Filter out non-allowed fields
-    update_data = {k: v for k, v in data.items() if k in allowed_fields}
-    
-    if not update_data:
-        return jsonify({"error": "No valid fields to update"}), 400
-    
+def get_profile(user):
     with get_db() as conn:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         
-        # Build dynamic update query
-        fields = ", ".join([f"{k} = %s" for k in update_data.keys()])
-        values = list(update_data.values())
-        values.append(user["id"])
-        
-        cursor.execute(f"""
-            UPDATE users 
-            SET {fields}
+        # Query to fetch the user's profile information
+        cursor.execute("""
+            SELECT name, email, address, city, state, zipcode
+            FROM users
             WHERE id = %s
-        """, values)
+        """, (user["id"],))
         
-        conn.commit()
-        cursor.close()
-        return jsonify({"message": "Profile updated successfully"})
+        # Fetch the result
+        user_data = cursor.fetchone()
+        
+        if user_data:
+            # Return the profile data as JSON
+            profile = {
+                "name": user_data["name"],
+                "email": user["email"],  # Assuming email is stored in the user object
+                "address": user_data["address"] or 'No address provided',
+                "city": user_data["city"] or 'No city provided',
+                "state": user_data["state"] or 'No state provided',
+                "zipcode": user_data["zipcode"] or 'No zipcode provided',
+            }
+            return jsonify(profile)
+        else:
+            return jsonify({"error": "Profile not found"}), 404
 
 
 # 🔹 Add/Update payment method

@@ -14,7 +14,7 @@
             <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
             <a href="{{ url_for('payment_methods') }}">Payments</a>
             <a href="{{ url_for('attendance') }}">Attendance</a>
-            <a href="#" onclick="logout()">Logout</a>
+            <a href="#" onclick="logout()" id="logoutnav">Logout</a>
         </div>
     </nav>
     
@@ -57,18 +57,53 @@
             </div>
         </div>
     </div>
+</body>
 
     <script>
         // Save token from query parameter if provided
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get("token");
-    
+
         if (token) {
             localStorage.setItem("token", token);
             // Remove token from URL after storing it
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-    
+
+        async function loadProfileInfo() {
+            try {
+                // Fetch user profile information
+                const response = await fetch('/api/dashboard/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const profile = await response.json();
+
+                const profileInfo = document.getElementById('personal-info');
+                const usernameSpan = document.getElementById('username'); // Get the span element
+
+                if (profile.error) {
+                    profileInfo.innerHTML = `
+                        <p>Error fetching profile information. Please try again later.</p>
+                    `;
+                } else {
+                    usernameSpan.textContent = profile.name;
+                    profileInfo.innerHTML = `
+                        <div class="info-item">
+                            <p>Name: ${profile.name}</p>
+                            <p>Email: ${profile.email}</p>
+                            <p>Address: ${profile.address} 
+                            <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                            ${profile.city} ${profile.state} ${profile.zipcode}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading profile info:', error);
+            }
+        }
+
         // Load membership information
         async function loadMembershipInfo() {
             try {
@@ -78,7 +113,7 @@
                     }
                 });
                 const membership = await response.json();
-    
+
                 const membershipInfo = document.getElementById('membership-info');
                 if (membership.error) {
                     membershipInfo.innerHTML = `
@@ -98,9 +133,9 @@
                 console.error('Error loading membership:', error);
             }
         }
-    
+
         // ... (rest of your script remains unchanged)
-    
+
 
         // Load booked classes
         async function loadBookedClasses() {
@@ -128,36 +163,6 @@
                 `).join('');
             } catch (error) {
                 console.error('Error loading classes:', error);
-            }
-        }
-
-        // Load recent activity
-        async function loadRecentActivity() {
-            try {
-                const response = await fetch('/api/dashboard/summary', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const data = await response.json();
-                
-                const activityList = document.getElementById('activity-list');
-                if (!data.recent_attendance || data.recent_attendance.length === 0) {
-                    activityList.innerHTML = '<p>No recent activity</p>';
-                    return;
-                }
-                
-                activityList.innerHTML = data.recent_attendance.map(visit => `
-                    <div class="activity-item">
-                        <p>Check-in: ${new Date(visit.check_in_time).toLocaleString()}</p>
-                        ${visit.check_out_time ? 
-                            `<p>Check-out: ${new Date(visit.check_out_time).toLocaleString()}</p>` : 
-                            '<p>Currently checked in</p>'
-                        }
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading activity:', error);
             }
         }
 
@@ -254,10 +259,9 @@
 
         // Initial load
         document.addEventListener('DOMContentLoaded', () => {
+            loadProfileInfo();
             loadMembershipInfo();
             loadBookedClasses();
-            loadRecentActivity();
         });
     </script>
-</body>
 </html> 
