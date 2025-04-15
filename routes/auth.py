@@ -31,65 +31,61 @@ def validate_password(password):
 def register_user():
     try:
         data = request.json
-        required_fields = ['name', 'email', 'password', 'dob', 'address', 'city', 'state', 'zipcode']
-        
-        # Validate required fields
-        missing_fields = [field for field in required_fields if not data.get(field)]
-        if missing_fields:
-            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        if not data.get('email') or not data.get('password'):
+            return jsonify({"error": "Email and password are required"}), 400
 
         # Validate email format
         if not validate_email(data['email']):
             return jsonify({"error": "Invalid email format"}), 400
 
-        # Validate password strength
-        is_valid, password_error = validate_password(data['password'])
-        if not is_valid:
-            return jsonify({"error": password_error}), 400
-
-        # Hash password
-        hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
-
         with get_db() as conn:
             cursor = conn.cursor(dictionary=True)
             
-            # Check if email exists
+            # Check if email already exists
             cursor.execute("SELECT id FROM users WHERE email = %s", (data['email'],))
             if cursor.fetchone():
-                return jsonify({"error": "Email already exists"}), 400
+                return jsonify({"error": "Email already registered"}), 400
 
+            # Hash password
+            hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+            
             # Insert new user
             cursor.execute("""
-                INSERT INTO users (
-                    name, email, password, role, dob, address, city, state, zipcode,
-                    auto_payment, created_at
-                ) VALUES (%s, %s, %s, 'non_member', %s, %s, %s, %s, %s, %s, NOW())
+                INSERT INTO users (email, password, role, name, dob, address, city, state, zipcode, auto_payment)
+                VALUES (%s, %s, 'non_member', %s, %s, %s, %s, %s, %s, %s)
             """, (
-                data['name'], data['email'], hashed_password, data['dob'],
-                data['address'], data['city'], data['state'], data['zipcode'],
+                data['email'],
+                hashed_password.decode('utf-8'),
+                data.get('name'),
+                data.get('dob'),
+                data.get('address'),
+                data.get('city'),
+                data.get('state'),
+                data.get('zipcode'),
                 data.get('auto_payment', False)
             ))
-            conn.commit()
             
-            # Get the new user's data
             user_id = cursor.lastrowid
+            conn.commit()
+
+            # Get the newly created user
             cursor.execute("""
                 SELECT id, email, role, membership_expiry, auto_payment
                 FROM users WHERE id = %s
             """, (user_id,))
-            user_data = cursor.fetchone()
-            
+            user = cursor.fetchone()
+
             # Create token
-            token = create_token(user_data)
+            token = create_token(user)
             
-            logger.info(f"User registered successfully: {data['email']}")
+            logger.info(f"New user registered: {data['email']}")
             return jsonify({
                 "message": "Registration successful",
                 "token": token,
                 "user": {
-                    "id": user_data['id'],
-                    "email": user_data['email'],
-                    "role": user_data['role']
+                    "id": user['id'],
+                    "email": user['email'],
+                    "role": user['role']
                 }
             }), 201
 

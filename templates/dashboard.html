@@ -11,9 +11,9 @@
 <body>
     <nav class="navbar">
         <div class="nav-links">
-            <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
-            <a href="{{ url_for('payment_methods') }}">Payments</a>
-            <a href="{{ url_for('attendance') }}">Attendance</a>
+            <a href="#" onclick="navigateTo('dashboard')" class="active">Dashboard</a>
+            <a href="#" onclick="navigateTo('payment_methods')">Payments</a>
+            <a href="#" onclick="navigateTo('attendance')">Attendance</a>
             <a href="#" onclick="logout()" id="logoutnav">Logout</a>
         </div>
     </nav>
@@ -68,6 +68,16 @@
             localStorage.setItem("token", token);
             // Remove token from URL after storing it
             window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Navigation function
+        function navigateTo(route) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            window.location.href = `/${route}?token=${token}`;
         }
 
         async function loadProfileInfo() {

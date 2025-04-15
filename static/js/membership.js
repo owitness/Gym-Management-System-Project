@@ -139,7 +139,9 @@ async function submitForm(membershipType) {
         const registerData = await registerResponse.json();
         const token = registerData.token;
         
-        console.log("User registered successfully, token received");
+        // Store token in localStorage
+        localStorage.setItem('token', token);
+        console.log("User registered successfully, token stored in localStorage");
         
         // Then add payment method
         const [month, year] = formData.expiration.split('/');

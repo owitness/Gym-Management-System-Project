@@ -134,20 +134,36 @@ def student_membership():
 
 # Protected routes
 @app.route("/dashboard")
-@authenticate
-def dashboard(user):
-    if user.get("role") == "admin":
-        return redirect(url_for("admin_dashboard"))
-    elif user.get("role") == "trainer":
-        return redirect(url_for("trainer_dashboard"))
-    return render_template("dashboard.html", user=user)
+def dashboard():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        if user.get("role") == "admin":
+            return redirect(url_for("admin_dashboard", token=token))
+        elif user.get("role") == "trainer":
+            return redirect(url_for("trainer_dashboard", token=token))
+        return render_template("dashboard.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/admin/dashboard")
-@authenticate
-def admin_dashboard(user):
-    if user.get("role") != "admin":
-        return redirect(url_for("dashboard"))
-    return render_template("admin.html", user=user)
+def admin_dashboard():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        if user.get("role") != "admin":
+            return redirect(url_for("dashboard", token=token))
+        return render_template("admin.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/trainer/dashboard")
 @authenticate
@@ -167,14 +183,30 @@ def classes(user):
     return render_template("classes.html", user=user)
 
 @app.route("/payment-methods")
-@authenticate
-def payment_methods(user):
-    return render_template("payment_methods.html", user=user)
+def payment_methods():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        return render_template("payment_methods.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/attendance")
-@authenticate
-def attendance(user):
-    return render_template("attendance.html", user=user)
+def attendance():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        return render_template("attendance.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/health")
 def health_check():

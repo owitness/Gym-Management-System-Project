@@ -1,20 +1,22 @@
 window.onload = pageLoad;
 
-async function loadDashboardSummary() {
-    const token = localStorage.getItem('token'); // Adjust if you're storing the token differently
+function getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
 
+async function loadDashboardData() {
     try {
-        const response = await fetch('/dashboard/summary', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const response = await fetch('/api/dashboard/summary', {
+            headers: getAuthHeaders()
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch dashboard data');
-        }
-
+        if (!response.ok) throw new Error('Failed to load dashboard data');
         const data = await response.json();
         const membership = data.membership;
 
@@ -43,13 +45,59 @@ async function loadDashboardSummary() {
     }
 }
 
+async function loadProfileData() {
+    try {
+        const response = await fetch('/api/dashboard/profile', {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to load profile data');
+        const data = await response.json();
+        // Update profile with data
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+async function loadMembershipData() {
+    try {
+        const response = await fetch('/api/my-membership', {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to load membership data');
+        const data = await response.json();
+        // Update membership info with data
+    } catch (error) {
+        console.error('Error loading membership:', error);
+    }
+}
+
+async function loadClassesData() {
+    try {
+        const response = await fetch('/api/classes', {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to load classes data');
+        const data = await response.json();
+        // Update classes with data
+    } catch (error) {
+        console.error('Error loading classes:', error);
+    }
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboardData();
+    loadProfileData();
+    loadMembershipData();
+    loadClassesData();
+});
+
 function logout() {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "/home";
+    localStorage.removeItem('token');
+    window.location.href = "/login";
 }
 
 // This function can be placed in a separate file or directly in the HTML, depending on your structure.
 function pageLoad() {
-    loadDashboardSummary();
+    loadDashboardData();
 }
