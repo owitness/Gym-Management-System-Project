@@ -104,14 +104,15 @@ def get_user_data(user_id):
 def authenticate(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        from flask import request
-
         token = None
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             parts = auth_header.split(" ")
             if len(parts) == 2:
                 token = parts[1]
+        else:
+            # Check for token in query parameter
+            token = request.args.get('token')
 
         if not token:
             return jsonify({'error': 'Authentication token is missing'}), 401
@@ -121,14 +122,17 @@ def authenticate(f):
             user_id = data['user_id']
             user_data = get_user_data(user_id)
             if not user_data:
-                raise Exception("Invalid user")
+                return jsonify({'error': 'Authentication failed: User not found'}), 401
 
-            # Inject user into kwargs to avoid positional mismatch
             kwargs['user'] = user_data
             return f(*args, **kwargs)
 
+        except jwt.ExpiredSignatureError as e:
+            return jsonify({'error': 'Authentication failed: Token has expired'}), 401
+        except jwt.InvalidTokenError as e:
+            return jsonify({'error': f'Authentication failed: Invalid token: {str(e)}'}), 401
         except Exception as e:
-            return jsonify({'error': 'Authentication failed'}), 401
+            return jsonify({'error': f'Authentication failed: {str(e)}'}), 401
 
     return decorated
 

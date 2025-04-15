@@ -10,7 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allClasses = [];
 
     async function fetchClasses() {
-        const token = localStorage.getItem("token");
+        let token = localStorage.getItem("token");
+        if (!token) {
+            const urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('token');
+            if (token) {
+                localStorage.setItem("token", token); // Store it for future requests
+            }
+        }
         if (!token) {
             return [];
         }
@@ -156,7 +163,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Moved to global scope so onclick="bookClass(...)" works in HTML
 window.bookClass = async (classId) => {
-    const token = localStorage.getItem('token');
+    let token = localStorage.getItem('token');
+    if (!token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        token = urlParams.get('token');
+        if (token) {
+            localStorage.setItem("token", token); // Store it for future requests
+        }
+    }
     if (!token) {
         alert("Please sign in first.");
         return;
@@ -182,3 +196,16 @@ window.bookClass = async (classId) => {
         alert("Booking failed. Please check your connection or try again later.");
     }
 };
+
+// Add navigateToCalendar function for dashboard navigation
+function navigateToCalendar() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Please sign in first.");
+        window.location.href = '/login';
+        return;
+    }
+
+    // Navigate directly with the token in the query parameter
+    window.location.href = `/calendar?token=${encodeURIComponent(token)}`;
+}

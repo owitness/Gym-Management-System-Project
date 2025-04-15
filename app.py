@@ -116,7 +116,8 @@ def contact():
 
 @app.route("/calendar")
 def calendar():
-    return render_template("calendar.html")
+    token = request.args.get('token', '')
+    return render_template("calendar.html", token=token)
 
 # Membership type routes
 @app.route("/membership/monthly")
