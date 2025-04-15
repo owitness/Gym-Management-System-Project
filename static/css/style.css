@@ -188,7 +188,6 @@ button {
 .calendar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
     padding: 10px;
     background-color: #f9f9f9;
     max-width: 900px;
@@ -198,7 +197,7 @@ button {
 .weekday, .day, .empty {
     background-color: #cbefff;
     border: 1px solid #999;
-    min-height: 100px;
+    min-height: 50px;
     text-align: center;
     padding: 8px;
     box-sizing: border-box;
@@ -207,7 +206,11 @@ button {
 
 .weekday {
     font-weight: bold;
-    background-color: #add8e6;
+    background-color: lightseagreen;
+}
+
+.day{
+    height: 100px;
 }
 
 .day.has-classes {
@@ -279,4 +282,46 @@ button {
     font-size: 24px;
     font-weight: bold;
     color: #292e70;
+}
+
+.day .dot {
+    width: 8px;
+    height: 8px;
+    background-color: #0077cc;
+    border-radius: 50%;
+    margin: 4px auto 0;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    margin: 10% auto;
+    border-radius: 8px;
+    position: relative;
+}
+
+.modal-content .close {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+#modal-date{
+    color: #292e70;
+    font-weight: bold;
+    text-shadow: none;
 }

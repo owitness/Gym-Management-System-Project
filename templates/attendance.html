@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance - Gym Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
     <nav class="navbar">
@@ -21,25 +21,21 @@
         <h1>Attendance</h1>
         
         <div class="attendance-grid">
-            <!-- Current Status -->
             <div class="attendance-card">
                 <h2>Current Status</h2>
-                <div id="current-status">
-                    <!-- Current check-in status will be loaded here -->
-                </div>
+                <div id="current-status"></div>
                 <div class="action-buttons">
-                    <button id="check-in-btn" onclick="checkIn()" class="btn-primary" style="display: none;">Check In</button>
-                    <button id="check-out-btn" onclick="checkOut()" class="btn-danger" style="display: none;">Check Out</button>
+                    <button id="check-in-btn" class="btn-primary" style="display: none;">Check In</button>
+                    <button id="check-out-btn" class="btn-danger" style="display: none;">Check Out</button>
                 </div>
             </div>
 
-            <!-- Attendance History -->
             <div class="attendance-card">
                 <h2>Attendance History</h2>
                 <div class="filter-controls">
                     <div class="form-group">
                         <label for="date-range">Date Range:</label>
-                        <select id="date-range" onchange="loadAttendanceHistory()">
+                        <select id="date-range">
                             <option value="7">Last 7 days</option>
                             <option value="30">Last 30 days</option>
                             <option value="90">Last 3 months</option>
@@ -47,210 +43,15 @@
                         </select>
                     </div>
                 </div>
-                <div id="attendance-history" class="scrollable-list">
-                    <!-- Attendance history will be loaded here -->
-                </div>
+                <div id="attendance-history" class="scrollable-list"></div>
             </div>
 
-            <!-- Statistics -->
             <div class="attendance-card">
                 <h2>Statistics</h2>
-                <div id="attendance-stats">
-                    <!-- Attendance statistics will be loaded here -->
-                </div>
+                <div id="attendance-stats"></div>
             </div>
         </div>
     </div>
-
-    <script>
-        // Load current status
-        async function loadCurrentStatus() {
-            try {
-                const response = await fetch('/api/attendance/current', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const status = await response.json();
-                
-                const statusDiv = document.getElementById('current-status');
-                const checkInBtn = document.getElementById('check-in-btn');
-                const checkOutBtn = document.getElementById('check-out-btn');
-                
-                if (status.checked_in) {
-                    statusDiv.innerHTML = `
-                        <div class="status-item checked-in">
-                            <h3>Currently Checked In</h3>
-                            <p>Since: ${new Date(status.check_in_time).toLocaleString()}</p>
-                            <p>Duration: ${calculateDuration(status.check_in_time)}</p>
-                        </div>
-                    `;
-                    checkInBtn.style.display = 'none';
-                    checkOutBtn.style.display = 'block';
-                } else {
-                    statusDiv.innerHTML = `
-                        <div class="status-item">
-                            <h3>Not Checked In</h3>
-                            <p>Last visit: ${status.last_visit ? new Date(status.last_visit).toLocaleString() : 'No previous visits'}</p>
-                        </div>
-                    `;
-                    checkInBtn.style.display = 'block';
-                    checkOutBtn.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Error loading current status:', error);
-            }
-        }
-
-        // Load attendance history
-        async function loadAttendanceHistory() {
-            const days = document.getElementById('date-range').value;
-            
-            try {
-                const response = await fetch(`/api/attendance/history?days=${days}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const history = await response.json();
-                
-                const historyDiv = document.getElementById('attendance-history');
-                if (!history || history.length === 0) {
-                    historyDiv.innerHTML = '<p>No attendance records found</p>';
-                    return;
-                }
-                
-                historyDiv.innerHTML = history.map(visit => `
-                    <div class="attendance-item">
-                        <h3>${new Date(visit.check_in_time).toLocaleDateString()}</h3>
-                        <p>Check-in: ${new Date(visit.check_in_time).toLocaleTimeString()}</p>
-                        ${visit.check_out_time ? 
-                            `<p>Check-out: ${new Date(visit.check_out_time).toLocaleTimeString()}</p>
-                             <p>Duration: ${calculateDuration(visit.check_in_time, visit.check_out_time)}</p>` : 
-                            '<p>No check-out recorded</p>'
-                        }
-                    </div>
-                `).join('');
-                
-                loadStatistics(history);
-            } catch (error) {
-                console.error('Error loading attendance history:', error);
-            }
-        }
-
-        // Load statistics
-        function loadStatistics(history) {
-            const stats = {
-                totalVisits: history.length,
-                averageDuration: 0,
-                longestVisit: 0,
-                mostFrequentDay: ''
-            };
-            
-            // Calculate statistics
-            const dayCount = {};
-            let totalDuration = 0;
-            
-            history.forEach(visit => {
-                const day = new Date(visit.check_in_time).toLocaleDateString('en-US', { weekday: 'long' });
-                dayCount[day] = (dayCount[day] || 0) + 1;
-                
-                if (visit.check_out_time) {
-                    const duration = new Date(visit.check_out_time) - new Date(visit.check_in_time);
-                    totalDuration += duration;
-                    stats.longestVisit = Math.max(stats.longestVisit, duration);
-                }
-            });
-            
-            stats.averageDuration = totalDuration / history.length;
-            stats.mostFrequentDay = Object.entries(dayCount)
-                .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
-            
-            // Display statistics
-            document.getElementById('attendance-stats').innerHTML = `
-                <div class="stats-item">
-                    <p>Total Visits: ${stats.totalVisits}</p>
-                    <p>Average Duration: ${formatDuration(stats.averageDuration)}</p>
-                    <p>Longest Visit: ${formatDuration(stats.longestVisit)}</p>
-                    <p>Most Frequent Day: ${stats.mostFrequentDay}</p>
-                </div>
-            `;
-        }
-
-        // Check in
-        async function checkIn() {
-            try {
-                const response = await fetch('/api/attendance/check-in', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                
-                if (response.ok) {
-                    loadCurrentStatus();
-                    loadAttendanceHistory();
-                } else {
-                    const error = await response.json();
-                    alert(error.error);
-                }
-            } catch (error) {
-                console.error('Error during check-in:', error);
-            }
-        }
-
-        // Check out
-        async function checkOut() {
-            try {
-                const response = await fetch('/api/attendance/check-out', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                
-                if (response.ok) {
-                    loadCurrentStatus();
-                    loadAttendanceHistory();
-                } else {
-                    const error = await response.json();
-                    alert(error.error);
-                }
-            } catch (error) {
-                console.error('Error during check-out:', error);
-            }
-        }
-
-        // Helper function to calculate duration
-        function calculateDuration(start, end = new Date()) {
-            const duration = new Date(end) - new Date(start);
-            return formatDuration(duration);
-        }
-
-        // Helper function to format duration
-        function formatDuration(ms) {
-            if (!ms || isNaN(ms)) return 'N/A';
-            
-            const hours = Math.floor(ms / (1000 * 60 * 60));
-            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-            
-            return `${hours}h ${minutes}m`;
-        }
-
-        // Logout function
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
-
-        // Initial load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCurrentStatus();
-            loadAttendanceHistory();
-            
-            // Update current status every minute
-            setInterval(loadCurrentStatus, 60000);
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
 </body>
-</html> 
+</html>

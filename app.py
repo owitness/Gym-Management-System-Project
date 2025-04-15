@@ -9,7 +9,7 @@ from routes.admin import admin_bp
 from routes.trainer import trainer_bp
 from routes.payments import payments_bp
 from routes.classes import class_schedule_bp
-from middleware import authenticate, add_security_headers, verify_token, get_user_data
+from middleware import authenticate, add_security_headers, verify_token, get_user_data, create_token
 import jwt
 from config import SECRET_KEY
 import logging
@@ -17,6 +17,11 @@ from logging.handlers import RotatingFileHandler
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime
+from generate_weekly_classes import generate_weekly_classes  # import your function
+from routes.attendance import attendance_bp
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -31,6 +36,7 @@ csrf.exempt(admin_bp)
 csrf.exempt(trainer_bp)
 csrf.exempt(payments_bp)
 csrf.exempt(class_schedule_bp)
+csrf.exempt(attendance_bp)
 
 # Configure CORS with specific options
 CORS(app, resources={
@@ -70,6 +76,7 @@ app.register_blueprint(admin_bp, url_prefix="/api")
 app.register_blueprint(trainer_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
 app.register_blueprint(class_schedule_bp, url_prefix="/api")
+app.register_blueprint(attendance_bp, url_prefix="/api")
 
 # Add security headers to all responses
 @app.after_request
@@ -112,7 +119,8 @@ def contact():
 
 @app.route("/calendar")
 def calendar():
-    return render_template("calendar.html")
+    token = request.args.get('token', '')
+    return render_template("calendar.html", token=token)
 
 # Membership type routes
 @app.route("/membership/monthly")
@@ -131,18 +139,34 @@ def student_membership():
 @app.route("/dashboard")
 @authenticate
 def dashboard(user):
-    if user.get("role") == "admin":
-        return redirect(url_for("admin_dashboard"))
-    elif user.get("role") == "trainer":
-        return redirect(url_for("trainer_dashboard"))
-    return render_template("dashboard.html", user=user)
+    token = create_token(user)
+    return render_template("dashboard.html", token=token)
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        if user.get("role") == "admin":
+            return redirect(url_for("admin_dashboard", token=token))
+        elif user.get("role") == "trainer":
+            return redirect(url_for("trainer_dashboard", token=token))
+        return render_template("dashboard.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/admin/dashboard")
-@authenticate
-def admin_dashboard(user):
-    if user.get("role") != "admin":
-        return redirect(url_for("dashboard"))
-    return render_template("admin.html", user=user)
+def admin_dashboard():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        if user.get("role") != "admin":
+            return redirect(url_for("dashboard", token=token))
+        return render_template("admin.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/trainer/dashboard")
 @authenticate
@@ -162,14 +186,30 @@ def classes(user):
     return render_template("classes.html", user=user)
 
 @app.route("/payment-methods")
-@authenticate
-def payment_methods(user):
-    return render_template("payment_methods.html", user=user)
+def payment_methods():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        return render_template("payment_methods.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/attendance")
-@authenticate
-def attendance(user):
-    return render_template("attendance.html", user=user)
+def attendance():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({'error': 'Authentication token is missing'}), 401
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        return render_template("attendance.html", user=user, token=token)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 401
 
 @app.route("/health")
 def health_check():
@@ -213,6 +253,26 @@ def too_many_requests_error(error):
 def internal_error(error):
     app.logger.error(f"Internal server error: {str(error)}")
     return jsonify({"error": "Internal server error"}), 500
+
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    
+    # Schedule it to run every Sunday at 12:00 AM
+    scheduler.add_job(
+        func=generate_weekly_classes,
+        trigger="cron",
+        day_of_week="sun",
+        hour=0,
+        minute=0,
+        id="weekly_class_generator",
+        replace_existing=True
+    )
+    scheduler.start()
+    print("Scheduler started: weekly class generator active.")
+
+# Start it
+start_scheduler()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

@@ -14,7 +14,7 @@ if not os.path.isfile(pem_path):
 SSH_CONFIG = {
     'ssh_host': 'ec2-18-191-239-86.us-east-2.compute.amazonaws.com',  # The SSH server hostname
     'ssh_username': 'ubuntu',  # SSH username
-    'ssh_private_key': 'C:/Users/makennahockenberry/Downloads/main.pem',  # Path to your private key file
+    'ssh_private_key': pem_path,  # Path to your private key file
     'remote_bind_address': ('gym-database.clqqsuqke2sz.us-east-2.rds.amazonaws.com', 3306)  # RDS endpoint and port
 }
 
