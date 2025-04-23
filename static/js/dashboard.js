@@ -1,13 +1,28 @@
 window.onload = pageLoad;
 
 function getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    // First check for token in localStorage using the correct key
+    let token = localStorage.getItem('gym_token');
+    
+    // If not found, try to get from URL query params (for initial load)
+    if (!token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        token = urlParams.get('token');
+        
+        // If found in URL, save to localStorage for future use
+        if (token) {
+            localStorage.setItem('gym_token', token);
+        }
+    }
+    
     const headers = {
         'Content-Type': 'application/json'
     };
+    
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
+    
     return headers;
 }
 

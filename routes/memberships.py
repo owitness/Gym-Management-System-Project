@@ -10,17 +10,17 @@ logger = logging.getLogger(__name__)
 # Membership configurations
 MEMBERSHIP_TYPES = {
     'monthly': {
-        'price': 50.00,
+        'price': 30.00,
         'duration': 1,  # months
         'description': 'Monthly membership with full gym access'
     },
     'annual': {
-        'price': 500.00,
+        'price': 300.00,
         'duration': 12,  # months
         'description': 'Annual membership with full gym access (save $100!)'
     },
     'student': {
-        'price': 40.00,
+        'price': 20.00,
         'duration': 1,  # months
         'description': 'Student membership with full gym access (valid student ID required)'
     }
