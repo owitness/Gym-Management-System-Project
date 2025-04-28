@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Dashboard - Gym Management System</title>
     <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
-    <script src="../static/js/calendarscript.js"></script>
-    <!-- <link href="{{ url_for('static', filename='css/dashboard.css') }}" type="text/css" rel="stylesheet"> -->
 </head>
 <body>
     <nav class="navbar">
@@ -17,18 +15,14 @@
             <a href="#" onclick="logout()" id="logoutnav">Logout</a>
         </div>
     </nav>
-    
 
     <div class="container">
-        <h1>Welcome, <span id="username"></span>!</h1>
-        
-        <div class="dashboard-grid">
-            <!-- Membership Info -->
+        <h1>Welcome, <span id="fullname"></span>!</h1>
 
+        <div class="dashboard-grid">
             <div class="dashboard-card">
                 <h2>Personal Info</h2>
                 <div id="personal-info">
-                    <!-- Personal information will be loaded here -->
                     <p>Full Name: <span id="username"></span></p>
                     <p>Email: <span id="email"></span></p>
                     <p>Address: <span id="address"></span></p>
@@ -37,268 +31,21 @@
 
             <div class="dashboard-card">
                 <h2>Your Membership</h2>
-                <div id="membership-info">
-                    <!-- Membership details will be loaded here -->
-                     <p>Membership Status: <span id="membstatus"></span></p>
-                     <p>Membership Type: <span id="membtype"></span></p>
-                     <p>Membership Expiration: <span id="expiration"></span></p>
-                </div>
+                <div id="membership-info"></div>
             </div>
 
-            <!-- Upcoming Classes -->
             <div class="dashboard-card">
                 <h2>Upcoming Classes & Trainings</h2>
                 <div id="classes-list" class="scrollable-list">
-                    <!-- Booked classes will be loaded here -->
-                     <p>Upcoming Classes: </p>
-                     <p>Upcoming Training Sessions: </p>
+                    <p>Upcoming Classes: </p>
+                    <p>Upcoming Training Sessions: </p>
                 </div>
                 <button onclick="navigateToCalendar()" class="btn-primary">Book New Class</button>
             </div>
         </div>
     </div>
+
+    <!-- Only import your clean dashboard.js -->
+    <script src="../static/js/dashboard.js"></script>
 </body>
-
-    <script>
-        // Save token from query parameter if provided
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get("token");
-
-        if (token) {
-            localStorage.setItem("token", token);
-            // Remove token from URL after storing it
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-
-        // Navigation function
-        function navigateTo(route) {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-            
-            // Prevent page reload for same page navigation
-            if (route === 'dashboard' && window.location.pathname === '/dashboard') {
-                return;
-            }
-            
-            // Add token to URL for all navigations
-            window.location.href = `/${route}?token=${token}`;
-        }
-        
-        // Calendar navigation function
-        function navigateToCalendar() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-            window.location.href = `/calendar?token=${token}`;
-        }
-
-        async function loadProfileInfo() {
-            try {
-                // Fetch user profile information
-                const response = await fetch('/api/dashboard/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const profile = await response.json();
-
-                const profileInfo = document.getElementById('personal-info');
-                const usernameSpan = document.getElementById('username'); // Get the span element
-
-                if (profile.error) {
-                    profileInfo.innerHTML = `
-                        <p>Error fetching profile information. Please try again later.</p>
-                    `;
-                } else {
-                    usernameSpan.textContent = profile.name;
-                    profileInfo.innerHTML = `
-                        <div class="info-item">
-                            <p>Name: ${profile.name}</p>
-                            <p>Email: ${profile.email}</p>
-                            <p>Address: ${profile.address} 
-                            <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                            ${profile.city} ${profile.state} ${profile.zipcode}</p>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading profile info:', error);
-            }
-        }
-
-        // Load membership information
-        async function loadMembershipInfo() {
-            try {
-                const response = await fetch('/api/my-membership', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const membership = await response.json();
-
-                const membershipInfo = document.getElementById('membership-info');
-                if (membership.error) {
-                    membershipInfo.innerHTML = `
-                        <p>No active membership found</p>
-                        <a href="/memberships" class="btn-primary">Get Membership</a>
-                    `;
-                } else {
-                    membershipInfo.innerHTML = `
-                        <div class="info-item">
-                            <p>Status: <span class="badge ${membership.status}">${membership.status}</span></p>
-                            <p>Expires: ${new Date(membership.expiry_date).toLocaleDateString()}</p>
-                            <p>Auto-renewal: ${membership.auto_payment ? 'Enabled' : 'Disabled'}</p>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading membership:', error);
-            }
-        }
-
-        // ... (rest of your script remains unchanged)
-
-
-        // Load booked classes
-        async function loadBookedClasses() {
-            try {
-                const response = await fetch('/api/dashboard/summary', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const data = await response.json();
-                
-                const classesList = document.getElementById('classes-list');
-                if (!data.upcoming_classes || data.upcoming_classes.length === 0) {
-                    classesList.innerHTML = '<p>No upcoming classes booked</p>';
-                    return;
-                }
-                
-                classesList.innerHTML = data.upcoming_classes.map(cls => `
-                    <div class="class-item">
-                        <h3>${cls.class_name}</h3>
-                        <p>Time: ${new Date(cls.schedule_time).toLocaleString('en-US', { timeZone: 'America/New_York' })}</p>
-                        <p>Trainer: ${cls.trainer_name}</p>
-                        <button onclick="cancelBooking(${cls.id})" class="btn-danger">Cancel</button>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading classes:', error);
-                classesList.innerHTML = '<p>Error loading booked classes: ' + error.message + '</p>';
-            }
-        }
-
-        // Book a class
-        async function bookClass(classId) {
-            try {
-                const response = await fetch(`/api/dashboard/book-class/${classId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                
-                if (response.ok) {
-                    closeModal('book-class-modal');
-                    loadBookedClasses();
-                } else {
-                    const error = await response.json();
-                    alert(error.error);
-                }
-            } catch (error) {
-                console.error('Error booking class:', error);
-            }
-        }
-
-        // Cancel class booking
-        async function cancelBooking(classId) {
-            if (!confirm('Are you sure you want to cancel this class booking?')) {
-                return;
-            }
-            
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    alert("Please sign in first.");
-                    window.location.href = '/login';
-                    return;
-                }
-        
-                const response = await fetch(`/api/classes/${classId}/cancel`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    alert("Class booking cancelled successfully!");
-                    loadBookedClasses(); // Refresh the list of booked classes
-                } else {
-                    const error = await response.json();
-                    alert(error.error || "Failed to cancel class booking.");
-                }
-            } catch (error) {
-                console.error('Error canceling booking:', error);
-                alert("An error occurred while cancelling the booking: " + error.message);
-            }
-        }
-
-        // Show class booking modal
-        async function showClassBookingModal() {
-            const modal = document.getElementById('book-class-modal');
-            const availableClasses = document.getElementById('available-classes');
-            
-            try {
-                const response = await fetch('/api/classes', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                const classes = await response.json();
-                
-                availableClasses.innerHTML = classes.map(cls => `
-                    <div class="class-item">
-                        <h3>${cls.class_name}</h3>
-                        <p>Time: ${new Date(cls.schedule_time).toLocaleString()}</p>
-                        <p>Trainer: ${cls.trainer_name}</p>
-                        <p>Available spots: ${cls.capacity - cls.current_bookings}</p>
-                        <button onclick="bookClass(${cls.id})" 
-                                class="btn-primary"
-                                ${cls.capacity <= cls.current_bookings ? 'disabled' : ''}>
-                            ${cls.capacity <= cls.current_bookings ? 'Full' : 'Book'}
-                        </button>
-                    </div>
-                `).join('');
-                
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error loading available classes:', error);
-            }
-        }
-
-        // Modal functions
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Logout function
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
-
-        // Initial load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProfileInfo();
-            loadMembershipInfo();
-            loadBookedClasses();
-        });
-    </script>
-</html> 
+</html>

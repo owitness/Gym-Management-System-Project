@@ -1,30 +1,69 @@
-window.onload = pageLoad;
+// ==========================
+// Authentication Utilities
+// ==========================
 
 function getAuthHeaders() {
-    // First check for token in localStorage using the correct key
     let token = localStorage.getItem('gym_token');
-    
-    // If not found, try to get from URL query params (for initial load)
+
     if (!token) {
         const urlParams = new URLSearchParams(window.location.search);
         token = urlParams.get('token');
-        
-        // If found in URL, save to localStorage for future use
+
         if (token) {
             localStorage.setItem('gym_token', token);
         }
     }
-    
+
     const headers = {
         'Content-Type': 'application/json'
     };
-    
+
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return headers;
 }
+
+// ==========================
+// Navigation Functions
+// ==========================
+
+function navigateTo(route) {
+    const token = localStorage.getItem('gym_token');
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+
+    if (route === 'dashboard' && window.location.pathname === '/dashboard') {
+        return;
+    }
+
+    window.location.href = `/${route}?token=${token}`;
+}
+
+function navigateToCalendar() {
+    const token = localStorage.getItem('gym_token');
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+    window.location.href = `/calendar?token=${token}`;
+}
+
+function logout() {
+    localStorage.removeItem('gym_token');
+    window.location.href = "/login";
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// ==========================
+// Dashboard Data Loaders
+// ==========================
 
 async function loadDashboardData() {
     try {
@@ -35,17 +74,35 @@ async function loadDashboardData() {
         const data = await response.json();
         const membership = data.membership;
 
-        // Update the DOM with membership data
+        // Update Personal Info
         document.getElementById('username').textContent = membership?.member_name || "Member";
+        document.getElementById('fullname').textContent = membership?.member_name || "Member";
         document.getElementById('email').textContent = membership?.email || "N/A";
         document.getElementById('address').textContent = membership?.address || "N/A";
-        document.getElementById('membstatus').textContent = membership?.status || "N/A";
-        document.getElementById('membtype').textContent = membership?.membership_type || "N/A";
-        document.getElementById('expiration').textContent = membership?.expiration || "N/A";
         
-        // Handle upcoming classes
+
+
+        // Update Membership Info dynamically
+        const membershipInfo = document.getElementById('membership-info');
+        membershipInfo.innerHTML = `
+            <div class="info-item">
+                <p>Status: <span class="badge ${membership.status}">${membership.status}</span></p>
+                <p>Expiration: ${membership.expiration ? new Date(membership.expiration).toLocaleDateString() : "N/A"}</p>
+            </div>
+        `;
+
+        // Add Cancel Membership Button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancel-membership-btn';
+        cancelBtn.className = 'btn-danger';
+        cancelBtn.textContent = 'Cancel Membership';
+        cancelBtn.addEventListener('click', cancelMembership);
+        membershipInfo.appendChild(cancelBtn);
+
+        // Update Upcoming Classes
         const classesList = document.getElementById('classes-list');
         if (data.upcoming_classes.length > 0) {
+            classesList.innerHTML = '';
             data.upcoming_classes.forEach(classInfo => {
                 const listItem = document.createElement('p');
                 listItem.textContent = `${classInfo.class_name} (Trainer: ${classInfo.trainer_name}) - ${new Date(classInfo.schedule_time).toLocaleString()}`;
@@ -54,6 +111,7 @@ async function loadDashboardData() {
         } else {
             classesList.innerHTML = "<p>No upcoming classes found.</p>";
         }
+
     } catch (error) {
         console.error('Error loading dashboard:', error);
         alert('Could not load dashboard information.');
@@ -67,7 +125,7 @@ async function loadProfileData() {
         });
         if (!response.ok) throw new Error('Failed to load profile data');
         const data = await response.json();
-        // Update profile with data
+        // Profile info is now mainly handled by loadDashboardData()
     } catch (error) {
         console.error('Error loading profile:', error);
     }
@@ -80,7 +138,7 @@ async function loadMembershipData() {
         });
         if (!response.ok) throw new Error('Failed to load membership data');
         const data = await response.json();
-        // Update membership info with data
+        // Membership info is mainly handled by loadDashboardData()
     } catch (error) {
         console.error('Error loading membership:', error);
     }
@@ -93,26 +151,54 @@ async function loadClassesData() {
         });
         if (!response.ok) throw new Error('Failed to load classes data');
         const data = await response.json();
-        // Update classes with data
+        // Class booking is handled separately
     } catch (error) {
         console.error('Error loading classes:', error);
     }
 }
 
-// Initialize dashboard when page loads
+// ==========================
+// Cancel Membership
+// ==========================
+
+async function cancelMembership() {
+    if (!confirm("Are you absolutely sure you want to cancel your membership and delete your account?")) return;
+
+    try {
+        const response = await fetch('/api/memberships/cancel', {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to cancel membership');
+        }
+
+        alert("Your account has been deleted. Thank you for being with us.");
+        localStorage.removeItem('gym_token'); // Clear the token
+        window.location.href = "/";
+    } catch (error) {
+        console.error('Error cancelling membership:', error);
+        alert('Error cancelling membership: ' + error.message);
+    }
+}
+
+// ==========================
+// Initializer
+// ==========================
+
 document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+
+    if (token) {
+        localStorage.setItem("gym_token", token);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     loadDashboardData();
     loadProfileData();
     loadMembershipData();
     loadClassesData();
 });
-
-function logout() {
-    localStorage.removeItem('token');
-    window.location.href = "/login";
-}
-
-// This function can be placed in a separate file or directly in the HTML, depending on your structure.
-function pageLoad() {
-    loadDashboardData();
-}
