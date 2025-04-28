@@ -93,7 +93,7 @@ async function loadDashboardData() {
 
         // Add Cancel Membership Button
         const cancelBtn = document.createElement('button');
-        cancelBtn.id = 'cancel-membership-btn';
+        cancelBtn.class = 'btn-primary';
         cancelBtn.className = 'btn-danger';
         cancelBtn.textContent = 'Cancel Membership';
         cancelBtn.addEventListener('click', cancelMembership);
