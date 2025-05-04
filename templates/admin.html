@@ -42,43 +42,170 @@
 
         let classes = [];
 
-        function addClassToList(classData) {
-            const classList = document.getElementById("classList");
-            const li = document.createElement("li");
-            li.textContent = `${classData.className} with ${classData.instructor} on ${classData.classDate} (Capacity: ${classData.classCapacity})`;
-            classList.appendChild(li);
+        async function fetchClasses() {
+            try {
+                console.log('Fetching classes from API...');
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.error('No authentication token found');
+                    return [];
+                }
+
+                const response = await fetch('/api/classes', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                console.log('API Response:', response);
+                if (!response.ok) throw new Error('Failed to fetch classes');
+                const data = await response.json();
+                console.log('Fetched classes:', data);
+                return data;
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+                return [];
+            }
         }
 
-        document.getElementById("newClassForm").addEventListener("submit", function (event) {
+        async function loadClasses() {
+            console.log('Loading classes into table...');
+            try {
+                const classes = await fetchClasses();
+                console.log('Classes to display:', classes);
+                const tbody = document.querySelector("#classList table tbody");
+                console.log('Table body element:', tbody);
+                
+                if (classes && classes.length > 0) {
+                    tbody.innerHTML = ''; // Clear existing rows
+                    
+                    classes.forEach(cls => {
+                        console.log('Adding class to table:', cls);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${cls.class_name}</td>
+                            <td>${cls.trainer_name}</td>
+                            <td>${cls.capacity}</td>
+                            <td>${cls.current_bookings}</td>
+                            <td>${cls.capacity - cls.current_bookings}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    console.log('No classes returned from API');
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        async function fetchTrainers() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.error('No authentication token found');
+                    return [];
+                }
+
+                const response = await fetch('/api/admin/trainers', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to fetch trainers');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching trainers:', error);
+                return [];
+            }
+        }
+
+        async function populateTrainerDropdown() {
+            const trainers = await fetchTrainers();
+            const instructorSelect = document.getElementById('instructor');
+            instructorSelect.innerHTML = '<option value="">Select a trainer</option>';
+            
+            trainers.forEach(trainer => {
+                const option = document.createElement('option');
+                option.value = trainer.id;
+                option.textContent = trainer.name;
+                instructorSelect.appendChild(option);
+            });
+        }
+
+        // Get token from URL parameters and store in localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                localStorage.setItem('token', token);
+                console.log('Token stored in localStorage');
+            } else {
+                console.error('No token found in URL parameters');
+            }
+            
+            // Load classes and trainers
+            loadClasses();
+            populateTrainerDropdown();
+        });
+
+        document.getElementById("newClassForm").addEventListener("submit", async function (event) {
             event.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please log in first');
+                return;
+            }
 
             const className = document.getElementById("className").value;
             const instructor = document.getElementById("instructor").value;
             const classDate = document.getElementById("classDate").value;
             const classCapacity = document.getElementById("classCapacity").value;
 
-            const newClass = {
-                className: className,
-                instructor: instructor,
-                classDate: classDate,
-                classCapacity: classCapacity
-            };
+            try {
+                const response = await fetch('/api/admin/classes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        class_name: className,
+                        trainer_name: instructor,
+                        schedule_time: classDate,
+                        capacity: classCapacity
+                    })
+                });
 
-            //Needs changed when database is set up
-            classes.push(newClass);
-            addClassToList(newClass);
+                if (!response.ok) throw new Error('Failed to create class');
 
-            // Show confirmation message
-            const confirmationMessage = document.getElementById('confirmationMessage');
-            confirmationMessage.style.display = 'block';
+                // Add the new class to the table
+                const tbody = document.querySelector("#classList table tbody");
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${className}</td>
+                    <td>${instructor}</td>
+                    <td>${classCapacity}</td>
+                    <td>0</td>
+                    <td>${classCapacity}</td>
+                `;
+                tbody.appendChild(tr);
 
-            // Hide the confirmation message after a few seconds
-            setTimeout(function() {
-                confirmationMessage.style.display = 'none';
-            }, 3000);
+                // Show confirmation message
+                const confirmationMessage = document.getElementById('confirmationMessage');
+                confirmationMessage.style.display = 'block';
 
-            // Optionally clear the form after submission
-            document.getElementById("newClassForm").reset();
+                // Hide the confirmation message after a few seconds
+                setTimeout(function() {
+                    confirmationMessage.style.display = 'none';
+                }, 3000);
+
+                // Clear the form
+                document.getElementById("newClassForm").reset();
+            } catch (error) {
+                console.error('Error creating class:', error);
+                alert('Failed to create class. Please try again.');
+            }
         });
 
         //Employee script
@@ -148,7 +275,7 @@
             <label for="classCapacity">Class Capacity:</label>
             <input type="number" id="classCapacity" name="classCapacity" min="1" required>
 
-            <button type="submit" onclick="classconfirmationMessage()">Add Class</button>
+            <button type="submit">Add Class</button>
         </form>
 
         <h3>Class Sizes & Open Spots</h3>
@@ -159,33 +286,12 @@
                         <tr>
                             <th>Class Name</th>
                             <th>Instructor</th>
-                            <th>Max Capacity</th>
-                            <th>Current Size</th>
+                            <th>Capacity</th>
+                            <th>Current Bookings</th>
                             <th>Open Spots</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Yoga</td>
-                            <td>Sarah</td>
-                            <td>20</td>
-                            <td>15</td>
-                            <td>5</td>
-                        </tr>
-                        <tr>
-                            <td>Jump</td>
-                            <td>John</td>
-                            <td>25</td>
-                            <td>20</td>
-                            <td>5</td>
-                        </tr>
-                        <tr>
-                            <td>Spin</td>
-                            <td>Amy</td>
-                            <td>15</td>
-                            <td>15</td>
-                            <td>0</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -226,27 +332,67 @@
     </div>
 
     <h2>Employee Management</h2>
-    <form id="newEmployeeForm">
-        <label for="employeeName">Employee Name:</label>
-        <input type="text" id="employeeName" name="employeeName" required>
-
-        <label for="employeeRole">Role:</label>
-        <input type="text" id="employeeRole" name="employeeRole" required>
-
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate" name="startDate" required>
-
-        <label for="status">Status:</label>
-        <select id="status" name="status" required>
-            <option value="Active">Active</option>
-            <option value="On Leave">On Leave</option>
-            <option value="Terminated">Terminated</option>
-        </select>
-
-        <button type="submit" onclick="employeeConfirmationMessage()">Add Employee</button>
-    </form>
-
-    <h3>Current Employees</h3>
-    <ul id="employeeList"></ul>
+   
+    <h3>Employee Pay and Tenure</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Weekly Pay</th>
+                    <th>Tenure</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Ava Strong</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Taylor Flexman</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Max Steele</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Sierra Powers</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+<h4>Monthly Report</h4>
+<div class="table-container"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>Rent</th>
+                <th>Payroll</th>
+                <th>Income</th>
+                <th>Earnings</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>$2,000</td>
+                <td>$2,000</td>
+                <td>$6,000</td>
+                <td>$2,000</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+    
 </body>
 </html>

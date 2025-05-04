@@ -306,3 +306,57 @@ def delete_membership(user, membership_id):
     except Exception as e:
         logger.error(f"Error in delete_membership: {str(e)}")
         return jsonify({"error": "Failed to delete membership"}), 500
+    
+@memberships_bp.route("/memberships/cancel", methods=["POST"])
+@authenticate
+def cancel_and_delete_user(user):
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # 🛠 1. Delete class bookings
+            cursor.execute("""
+                DELETE FROM class_bookings
+                WHERE member_id = %s
+            """, (user["id"],))
+
+            # 🛠 2. Delete attendance records
+            cursor.execute("""
+                DELETE FROM attendance
+                WHERE member_id = %s
+            """, (user["id"],))
+
+            # 🛠 3. Delete payments (FIRST, before payment methods)
+            cursor.execute("""
+                DELETE FROM payments
+                WHERE user_id = %s
+            """, (user["id"],))
+
+            # 🛠 4. Delete payment methods (now safe)
+            cursor.execute("""
+                DELETE FROM payment_methods
+                WHERE user_id = %s
+            """, (user["id"],))
+
+            # 🛠 5. Delete memberships
+            cursor.execute("""
+                DELETE FROM memberships
+                WHERE member_id = %s
+            """, (user["id"],))
+
+            # 🛠 6. Delete user account
+            cursor.execute("""
+                DELETE FROM users
+                WHERE id = %s
+            """, (user["id"],))
+
+            conn.commit()
+
+            return jsonify({"message": "Membership and user account deleted successfully."})
+
+    except Exception as e:
+        current_app.logger.error(f"Error deleting user {user['id']}: {str(e)}")
+        return jsonify({"error": "Failed to delete account"}), 500
+
+
+    

@@ -55,7 +55,7 @@
     
                         // Redirect
                         if (data.user.role === 'admin') {
-                            window.location.href = '/admin/dashboard';
+                            window.location.href = `/admin/dashboard?token=${data.token}`;
                         } else {
                             window.location.href = `/redirect-dashboard?token=${data.token}`;
                         }
