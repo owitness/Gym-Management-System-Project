@@ -12,7 +12,7 @@
     <nav class="navbar">
         <div class="nav-links">
             <a href="#" onclick="navigateTo('dashboard')" class="active">Dashboard</a>
-            <a href="#" onclick="navigateTo('payment_methods')">Payments</a>
+            <a href="#" onclick="navigateTo('payment-methods')">Payments</a>
             <a href="#" onclick="navigateTo('attendance')">Attendance</a>
             <a href="#" onclick="logout()" id="logoutnav">Logout</a>
         </div>
@@ -77,7 +77,24 @@
                 window.location.href = '/login';
                 return;
             }
+            
+            // Prevent page reload for same page navigation
+            if (route === 'dashboard' && window.location.pathname === '/dashboard') {
+                return;
+            }
+            
+            // Add token to URL for all navigations
             window.location.href = `/${route}?token=${token}`;
+        }
+        
+        // Calendar navigation function
+        function navigateToCalendar() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            window.location.href = `/calendar?token=${token}`;
         }
 
         async function loadProfileInfo() {

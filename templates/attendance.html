@@ -51,6 +51,39 @@
             </div>
         </div>
     </div>
+    <script>
+        // Save token from query parameter if provided
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get("token");
+
+        if (token) {
+            localStorage.setItem("token", token);
+            // Remove token from URL after storing it
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Navigation function
+        function navigateTo(route) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Prevent page reload for same page navigation
+            if (route === 'attendance' && window.location.pathname === '/attendance') {
+                return;
+            }
+            
+            window.location.href = `/${route}?token=${token}`;
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/attendance.js') }}"></script>
 </body>
 </html>

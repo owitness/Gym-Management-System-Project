@@ -25,13 +25,14 @@ def create_token(user_data, expiry_hours=24):
         # Calculate expiration time
         exp_time = datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
         
-        # Create simple token payload
+        # Create token payload with additional metadata
         payload = {
             "user_id": user_data["id"],
             "email": user_data["email"],
             "role": user_data["role"],
             "iat": int(datetime.now(timezone.utc).timestamp()),
-            "exp": int(exp_time.timestamp())
+            "exp": int(exp_time.timestamp()),
+            "refresh_token": False  # Indicates this is not a refresh token
         }
 
         # Encode the token
@@ -46,6 +47,23 @@ def create_token(user_data, expiry_hours=24):
     except Exception as e:
         logger.error(f"Token creation failed: {str(e)}")
         raise AuthenticationError(f"Failed to create authentication token: {str(e)}")
+
+def create_refresh_token(user_data, expiry_days=7):
+    """Create a refresh token with longer expiration"""
+    try:
+        exp_time = datetime.now(timezone.utc) + timedelta(days=expiry_days)
+        payload = {
+            "user_id": user_data["id"],
+            "email": user_data["email"],
+            "role": user_data["role"],
+            "iat": int(datetime.now(timezone.utc).timestamp()),
+            "exp": int(exp_time.timestamp()),
+            "refresh_token": True  # Indicates this is a refresh token
+        }
+        return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    except Exception as e:
+        logger.error(f"Refresh token creation failed: {str(e)}")
+        raise AuthenticationError(f"Failed to create refresh token: {str(e)}")
 
 def verify_token(token):
     """Verify and decode JWT token"""
@@ -165,3 +183,22 @@ def add_security_headers(response):
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
     })
     return response
+
+def refresh_token(refresh_token):
+    """Refresh an expired access token using a refresh token"""
+    try:
+        decoded = verify_token(refresh_token)
+        if not decoded.get('refresh_token'):
+            raise AuthenticationError("Invalid refresh token")
+        
+        user_data = get_user_data(decoded['user_id'])
+        new_access_token = create_token(user_data)
+        new_refresh_token = create_refresh_token(user_data)
+        
+        return {
+            'access_token': new_access_token,
+            'refresh_token': new_refresh_token
+        }
+    except Exception as e:
+        logger.error(f"Token refresh failed: {str(e)}")
+        raise AuthenticationError(f"Failed to refresh token: {str(e)}")

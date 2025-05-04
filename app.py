@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, redirect, url_for, request, jsonify, g, send_from_directory, session
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 from routes.auth import auth_bp
@@ -9,7 +9,10 @@ from routes.admin import admin_bp
 from routes.trainer import trainer_bp
 from routes.payments import payments_bp
 from routes.classes import class_schedule_bp
-from middleware import authenticate, add_security_headers, verify_token, get_user_data, create_token
+from middleware import (
+    authenticate, add_security_headers, verify_token, get_user_data, 
+    create_token, AuthenticationError, refresh_token as refresh_token_func
+)
 import jwt
 from config import SECRET_KEY
 import logging
@@ -18,13 +21,17 @@ import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
+from datetime import datetime, timedelta
 from generate_weekly_classes import generate_weekly_classes  # import your function
 from routes.attendance import attendance_bp
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 csrf = CSRFProtect(app)
 
 # Exempt API routes from CSRF protection
@@ -68,7 +75,7 @@ limiter = Limiter(
 )
 
 # ✅ Register API Routes
-app.register_blueprint(auth_bp, url_prefix="/api")
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(users_bp, url_prefix="/api")
 app.register_blueprint(memberships_bp, url_prefix="/api")
 app.register_blueprint(dashboard_bp, url_prefix="/api")
@@ -83,7 +90,7 @@ app.register_blueprint(attendance_bp, url_prefix="/api")
 def after_request(response):
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "connect-src 'self' http://localhost:5001 http://127.0.0.1:5001; "
@@ -137,21 +144,37 @@ def student_membership():
 
 # Protected routes
 @app.route("/dashboard")
-@authenticate
-def dashboard(user):
-    token = create_token(user)
-    return render_template("dashboard.html", token=token)
+def dashboard():
+    # Check for token in Authorization header
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]  # Remove 'Bearer ' prefix
+        
+    # If no token in header, check query parameter
+    if not token:
+        token = request.args.get('token')
+    
+    # If still no token, redirect to login
+    if not token:
+        return redirect(url_for("login"))
     
     try:
+        # Verify token and get user data
         decoded = verify_token(token)
         user = get_user_data(decoded["user_id"])
+        
+        # Redirect based on role for special users
         if user.get("role") == "admin":
             return redirect(url_for("admin_dashboard", token=token))
         elif user.get("role") == "trainer":
             return redirect(url_for("trainer_dashboard", token=token))
+            
+        # Regular member dashboard
         return render_template("dashboard.html", user=user, token=token)
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 401
+        app.logger.error(f"Dashboard access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
@@ -169,47 +192,138 @@ def admin_dashboard():
         return jsonify({"error": str(e)}), 401
 
 @app.route("/trainer/dashboard")
-@authenticate
-def trainer_dashboard(user):
-    if user.get("role") != "trainer":
-        return redirect(url_for("dashboard"))
-    return render_template("trainer_dashboard.html", user=user)
+def trainer_dashboard():
+    # Check for token in query parameters or headers
+    token = request.args.get('token')
+    if not token:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header[7:]
+    
+    if not token:
+        return redirect(url_for("login"))
+    
+    try:
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        
+        # Ensure user is a trainer
+        if user.get("role") != "trainer":
+            return redirect(url_for("dashboard", token=token))
+            
+        return render_template("trainer_dashboard.html", user=user, token=token)
+    
+    except Exception as e:
+        app.logger.error(f"Trainer dashboard access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/profile")
-@authenticate
-def profile(user):
-    return render_template("profile.html", user=user)
+def profile():
+    # Check for token in Authorization header
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]  # Remove 'Bearer ' prefix
+        
+    # If no token in header, check query parameter
+    if not token:
+        token = request.args.get('token')
+    
+    # If still no token, redirect to login
+    if not token:
+        return redirect(url_for("login"))
+    
+    try:
+        # Verify token and get user data
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        
+        # Render profile template
+        return render_template("profile.html", user=user, token=token)
+    
+    except Exception as e:
+        app.logger.error(f"Profile access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/classes")
-@authenticate
-def classes(user):
-    return render_template("classes.html", user=user)
+def classes():
+    # Check for token in Authorization header
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]  # Remove 'Bearer ' prefix
+        
+    # If no token in header, check query parameter
+    if not token:
+        token = request.args.get('token')
+    
+    # If still no token, redirect to login
+    if not token:
+        return redirect(url_for("login"))
+    
+    try:
+        # Verify token and get user data
+        decoded = verify_token(token)
+        user = get_user_data(decoded["user_id"])
+        
+        # Render classes template
+        return render_template("classes.html", user=user, token=token)
+    
+    except Exception as e:
+        app.logger.error(f"Classes access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/payment-methods")
 def payment_methods():
-    token = request.args.get('token')
+    # Check for token in Authorization header
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]  # Remove 'Bearer ' prefix
+        
+    # If no token in header, check query parameter
     if not token:
-        return jsonify({'error': 'Authentication token is missing'}), 401
+        token = request.args.get('token')
+    
+    # If still no token, redirect to login
+    if not token:
+        return redirect(url_for("login"))
     
     try:
+        # Verify token and get user data
         decoded = verify_token(token)
         user = get_user_data(decoded["user_id"])
+        
+        # Render payment_methods template
         return render_template("payment_methods.html", user=user, token=token)
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 401
+        app.logger.error(f"Payment methods access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/attendance")
 def attendance():
-    token = request.args.get('token')
+    # Check for token in Authorization header
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]  # Remove 'Bearer ' prefix
+        
+    # If no token in header, check query parameter
     if not token:
-        return jsonify({'error': 'Authentication token is missing'}), 401
+        token = request.args.get('token')
+    
+    # If still no token, redirect to login
+    if not token:
+        return redirect(url_for("login"))
     
     try:
+        # Verify token and get user data
         decoded = verify_token(token)
         user = get_user_data(decoded["user_id"])
+        
+        # Render attendance template
         return render_template("attendance.html", user=user, token=token)
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 401
+        app.logger.error(f"Attendance access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/health")
 def health_check():
@@ -227,6 +341,75 @@ def redirect_dashboard_with_token():
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
+@app.before_request
+def before_request():
+    # List of public routes that don't require authentication
+    public_routes = [
+        'home', 'login', 'signup_page', 'memberships', 'contact', 'calendar',
+        'monthly_membership', 'annual_membership', 'student_membership',
+        'health_check', 'static', 'register_user', 'dashboard', 'admin_dashboard', 
+        'trainer_dashboard', 'redirect_dashboard_with_token'  # Added dashboard routes
+    ]
+    
+    # Public API routes that don't require authentication
+    public_api_routes = [
+        '/api/auth/register',
+        '/api/auth/login',
+        '/api/auth/refresh-token'
+    ]
+    
+    # Skip token verification for public routes, static files, and auth endpoints
+    if (request.endpoint in public_routes or 
+        request.path.startswith('/static/') or 
+        request.path == '/favicon.ico' or
+        request.path in public_api_routes):
+        return
+    
+    # Skip token verification for OPTIONS requests (CORS preflight)
+    if request.method == 'OPTIONS':
+        return
+    
+    # Check if user is authenticated in the session
+    if 'user_id' in session:
+        try:
+            user = get_user_data(session['user_id'])
+            g.user = {
+                'user_id': user['id'],
+                'email': user['email'],
+                'role': user['role']
+            }
+            return
+        except Exception:
+            # If session is invalid, continue to check token
+            pass
+    
+    # Get token from Authorization header or query parameter
+    token = request.headers.get('Authorization')
+    if not token:
+        token = request.args.get('token')
+    
+    if token:
+        try:
+            # Remove 'Bearer ' prefix if present
+            if token.startswith('Bearer '):
+                token = token[7:]
+            
+            # Verify token
+            decoded = verify_token(token)
+            g.user = decoded
+            
+            # Store user in session for future requests
+            session['user_id'] = decoded['user_id']
+            session['email'] = decoded.get('email')
+            session['role'] = decoded.get('role')
+            session.permanent = True
+            
+        except AuthenticationError as e:
+            return jsonify({'error': str(e)}), 401
+    else:
+        # Only require token for protected endpoints
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'No token provided'}), 401
 
 # Error handlers
 @app.errorhandler(401)
@@ -242,7 +425,11 @@ def forbidden_error(error):
 @app.errorhandler(404)
 def not_found_error(error):
     app.logger.warning(f"404 error for URL: {request.url}")
-    return jsonify({"error": "Resource not found"}), 404
+    # Check if the request wants JSON
+    if request.path.startswith('/api/') or request.headers.get('Accept', '').find('application/json') != -1:
+        return jsonify({"error": "Resource not found"}), 404
+    # For HTML requests, redirect to a user-friendly page or the login page
+    return redirect(url_for("login"))
 
 @app.errorhandler(429)
 def too_many_requests_error(error):
@@ -272,7 +459,6 @@ def start_scheduler():
 
 # Start it
 start_scheduler()
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

@@ -2,45 +2,8 @@
 const auth = {
     // API endpoints
     endpoints: {
-        login: '/api/login',
-        logout: '/api/logout',
-        profile: '/api/profile',
-        register: '/api/register'
-    },
-
-    // Token management
-    token: {
-        get: () => localStorage.getItem('token'),
-        set: (token) => localStorage.setItem('token', token),
-        remove: () => localStorage.removeItem('token')
-    },
-
-    // User data management
-    user: {
-        get: () => JSON.parse(localStorage.getItem('user')),
-        set: (user) => localStorage.setItem('user', JSON.stringify(user)),
-        remove: () => localStorage.removeItem('user')
-    },
-
-    // Get headers for authenticated requests
-    getHeaders() {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        // Add CSRF token if available
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (csrfToken) {
-            headers['X-CSRF-Token'] = csrfToken;
-        }
-        
-        // Add auth token if available
-        const token = this.token.get();
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        return headers;
+        register: '/api/auth/register',
+        profile: '/api/auth/profile'
     },
 
     // Register user
@@ -48,7 +11,9 @@ const auth = {
         try {
             const response = await fetch(this.endpoints.register, {
                 method: 'POST',
-                headers: this.getHeaders(),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(userData)
             });
 
@@ -58,10 +23,8 @@ const auth = {
                 throw new Error(data.error || 'Registration failed');
             }
 
-            // Store token and user data
-            this.token.set(data.token);
-            this.user.set(data.user);
-
+            setUser(data.user);
+            setTokens(data.token, null); // Set the token from registration
             return data;
         } catch (error) {
             console.error('Registration error:', error);
@@ -69,46 +32,17 @@ const auth = {
         }
     },
 
-    // Login user
-    async login(credentials) {
-        try {
-            const response = await fetch(this.endpoints.login, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify(credentials)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Login failed');
-            }
-
-            // Store token and user data
-            this.token.set(data.token);
-            this.user.set(data.user);
-
-            return data;
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    },
-
     // Get user profile
     async getProfile() {
         try {
-            const response = await fetch(this.endpoints.profile, {
-                method: 'GET',
-                headers: this.getHeaders()
-            });
-
+            const response = await apiRequest(this.endpoints.profile);
             const data = await response.json();
 
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to fetch profile');
             }
 
+            setUser(data.user);
             return data;
         } catch (error) {
             console.error('Profile error:', error);
@@ -116,59 +50,14 @@ const auth = {
         }
     },
 
-    // Logout user
-    async logout() {
-        try {
-            const response = await fetch(this.endpoints.logout, {
-                method: 'POST',
-                headers: this.getHeaders()
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Logout failed');
-            }
-
-            // Clear token and user data
-            this.token.remove();
-            this.user.remove();
-
-            return data;
-        } catch (error) {
-            console.error('Logout error:', error);
-            throw error;
-        }
-    },
-
-    // Check if user is authenticated
-    isAuthenticated() {
-        const token = this.token.get();
-        if (!token) return false;
-        
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.exp * 1000 > Date.now();
-        } catch (error) {
-            console.error('Token validation error:', error);
-            return false;
-        }
-    },
-
     // Get user role
     getUserRole() {
-        const user = this.user.get();
+        const user = getUser();
         return user ? user.role : null;
     },
 
     // Initialize authentication state
     init() {
-        // Check token expiration
-        if (!this.isAuthenticated()) {
-            this.token.remove();
-            this.user.remove();
-        }
-
         // Setup login form handler
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
@@ -186,14 +75,7 @@ const auth = {
                         password: loginForm.password.value
                     };
                     
-                    const data = await this.login(credentials);
-                    
-                    // Redirect based on role
-                    if (data.user.role === 'admin') {
-                        window.location.href = '/admin';
-                    } else {
-                        window.location.href = '/dashboard';
-                    }
+                    await login(credentials.email, credentials.password);
                 } catch (error) {
                     errorMessage.textContent = error.message;
                     errorMessage.style.display = 'block';
@@ -215,7 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const errorMessage = document.getElementById('error-message');
+            const loading = document.getElementById('loading');
+            
             try {
+                loading.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
                 const userData = {
                     name: registerForm.name.value,
                     email: registerForm.email.value,
@@ -227,10 +115,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     zipcode: registerForm.zipcode.value,
                     auto_payment: registerForm.auto_payment.checked
                 };
-                await auth.register(userData);
-                window.location.href = '/dashboard';
+                
+                const response = await auth.register(userData);
+                
+                // Redirect based on role
+                if (response.user.role === 'admin') {
+                    window.location.href = '/admin/dashboard';
+                } else if (response.user.role === 'trainer') {
+                    window.location.href = '/trainer/dashboard';
+                } else {
+                    window.location.href = '/dashboard';
+                }
             } catch (error) {
-                alert(error.message);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
             }
         });
     }
@@ -238,37 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logout button
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
+        logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            try {
-                await auth.logout();
-                window.location.href = '/login';
-            } catch (error) {
-                alert(error.message);
-            }
+            logout();
         });
-    }
-
-    // Profile page
-    const profileContainer = document.getElementById('profileContainer');
-    if (profileContainer) {
-        (async () => {
-            try {
-                const profile = await auth.getProfile();
-                // Update profile UI with the fetched data
-                Object.entries(profile).forEach(([key, value]) => {
-                    const element = document.getElementById(`profile_${key}`);
-                    if (element) {
-                        if (key === 'membership_expiry' || key === 'created_at') {
-                            element.textContent = value ? new Date(value).toLocaleDateString() : 'N/A';
-                        } else {
-                            element.textContent = value || 'N/A';
-                        }
-                    }
-                });
-            } catch (error) {
-                alert(error.message);
-            }
-        })();
     }
 }); 
