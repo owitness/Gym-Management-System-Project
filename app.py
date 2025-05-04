@@ -145,17 +145,12 @@ def student_membership():
 # Protected routes
 @app.route("/dashboard")
 def dashboard():
-    # Check for token in Authorization header
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[7:]  # Remove 'Bearer ' prefix
-        
-    # If no token in header, check query parameter
-    if not token:
-        token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
     
-    # If still no token, redirect to login
+    # If no token, redirect to login
     if not token:
+        app.logger.warning("No token found for dashboard access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -165,11 +160,12 @@ def dashboard():
         
         # Redirect based on role for special users
         if user.get("role") == "admin":
-            return redirect(url_for("admin_dashboard", token=token))
+            return redirect(url_for("admin_dashboard"))
         elif user.get("role") == "trainer":
-            return redirect(url_for("trainer_dashboard", token=token))
+            return redirect(url_for("trainer_dashboard"))
             
         # Regular member dashboard
+        # Pass token to template so it's available
         return render_template("dashboard.html", user=user, token=token)
     
     except Exception as e:
@@ -178,29 +174,30 @@ def dashboard():
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
-    token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
+    
     if not token:
-        return jsonify({'error': 'Authentication token is missing'}), 401
+        app.logger.warning("No token found for admin dashboard access - redirecting to login")
+        return redirect(url_for("login"))
     
     try:
         decoded = verify_token(token)
         user = get_user_data(decoded["user_id"])
         if user.get("role") != "admin":
-            return redirect(url_for("dashboard", token=token))
+            return redirect(url_for("dashboard"))
         return render_template("admin.html", user=user, token=token)
     except Exception as e:
-        return jsonify({"error": str(e)}), 401
+        app.logger.error(f"Admin dashboard access error: {str(e)}")
+        return redirect(url_for("login"))
 
 @app.route("/trainer/dashboard")
 def trainer_dashboard():
-    # Check for token in query parameters or headers
-    token = request.args.get('token')
-    if not token:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header[7:]
+    # Get token using the utility function
+    token = get_token_from_request()
     
     if not token:
+        app.logger.warning("No token found for trainer dashboard access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -209,7 +206,7 @@ def trainer_dashboard():
         
         # Ensure user is a trainer
         if user.get("role") != "trainer":
-            return redirect(url_for("dashboard", token=token))
+            return redirect(url_for("dashboard"))
             
         return render_template("trainer_dashboard.html", user=user, token=token)
     
@@ -219,17 +216,11 @@ def trainer_dashboard():
 
 @app.route("/profile")
 def profile():
-    # Check for token in Authorization header
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[7:]  # Remove 'Bearer ' prefix
-        
-    # If no token in header, check query parameter
-    if not token:
-        token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
     
-    # If still no token, redirect to login
     if not token:
+        app.logger.warning("No token found for profile access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -246,17 +237,11 @@ def profile():
 
 @app.route("/classes")
 def classes():
-    # Check for token in Authorization header
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[7:]  # Remove 'Bearer ' prefix
-        
-    # If no token in header, check query parameter
-    if not token:
-        token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
     
-    # If still no token, redirect to login
     if not token:
+        app.logger.warning("No token found for classes access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -273,17 +258,11 @@ def classes():
 
 @app.route("/payment-methods")
 def payment_methods():
-    # Check for token in Authorization header
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[7:]  # Remove 'Bearer ' prefix
-        
-    # If no token in header, check query parameter
-    if not token:
-        token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
     
-    # If still no token, redirect to login
     if not token:
+        app.logger.warning("No token found for payment methods access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -300,17 +279,11 @@ def payment_methods():
 
 @app.route("/attendance")
 def attendance():
-    # Check for token in Authorization header
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[7:]  # Remove 'Bearer ' prefix
-        
-    # If no token in header, check query parameter
-    if not token:
-        token = request.args.get('token')
+    # Get token using the utility function
+    token = get_token_from_request()
     
-    # If still no token, redirect to login
     if not token:
+        app.logger.warning("No token found for attendance access - redirecting to login")
         return redirect(url_for("login"))
     
     try:
@@ -331,13 +304,13 @@ def health_check():
 
 @app.route('/redirect-dashboard')
 def redirect_dashboard_with_token():
-    token = request.args.get('token')
+    token = get_token_from_request()
     if not token:
         return jsonify({'error': 'Missing token'}), 400
     try:
         decoded = verify_token(token)
         user = get_user_data(decoded["user_id"])
-        return render_template("dashboard.html", user=user)
+        return render_template("dashboard.html", user=user, token=token)
     except Exception as e:
         return jsonify({"error": str(e)}), 401
 
@@ -459,6 +432,28 @@ def start_scheduler():
 
 # Start it
 start_scheduler()
+
+def get_token_from_request():
+    """Extract token from request in order of: cookies, URL query param, Authorization header"""
+    # 1. Check cookies first (most reliable for page refreshes)
+    token = request.cookies.get('token')
+    
+    # 2. If not in cookies, check URL parameters
+    if not token:
+        token = request.args.get('token')
+    
+    # 3. If still not found, check Authorization header
+    if not token:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header[7:]  # Remove 'Bearer ' prefix
+    
+    return token
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

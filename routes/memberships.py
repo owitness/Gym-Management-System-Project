@@ -88,7 +88,15 @@ def purchase_membership(user):
         return jsonify({"error": "Invalid membership type"}), 400
         
     membership_info = MEMBERSHIP_TYPES[membership_type]
-    expiry_date = datetime.now() + timedelta(days=30 * membership_info['duration'])
+    
+    # Calculate the expiry date
+    now = datetime.now()
+    if membership_type == 'annual':
+        # Use actual year calculation for annual membership
+        expiry_date = now.replace(year=now.year + 1)
+    else:
+        # For other membership types, use 30 days per month
+        expiry_date = now + timedelta(days=30 * membership_info['duration'])
     
     with get_db() as conn:
         cursor = conn.cursor()
