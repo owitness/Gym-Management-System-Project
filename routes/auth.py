@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from db import get_db
 import bcrypt
 from datetime import datetime
+import jwt
 from middleware import create_token, authenticate, AuthenticationError, refresh_token as refresh_token_func
 import logging
 import re
@@ -106,7 +107,12 @@ def register_user():
                 # Set start and expiry dates
                 from datetime import datetime, timedelta
                 start_date = datetime.now().date()
-                expiry_date = start_date + timedelta(days=30 * membership_duration)
+                if data['membership_type'] == 'annual':
+                    # Use actual year calculation for annual membership (365 days)
+                    expiry_date = start_date.replace(year=start_date.year + 1)
+                else:
+                    # For other membership types, use 30 days per month
+                    expiry_date = start_date + timedelta(days=30 * membership_duration)
                 
                 # Insert new membership
                 cursor.execute("""

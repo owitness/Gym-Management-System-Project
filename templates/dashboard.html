@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Dashboard - Gym Management System</title>
     <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
+    <!-- Inline script to ensure token is saved to cookie before page loads -->
+    <script>
+        // Get token from URL or localStorage and store as cookie
+        (function saveTokenToCookie() {
+            // Try URL first (priority)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get("token");
+            
+            if (urlToken) {
+                // Save to localStorage and cookie
+                localStorage.setItem("gym_token", urlToken);
+                document.cookie = `token=${urlToken}; path=/; max-age=86400; SameSite=Strict`;
+                
+                // Always remove token from URL for security
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+            
+            // If not in URL, try to get from localStorage
+            const localToken = localStorage.getItem("gym_token");
+            if (localToken) {
+                // Save to cookie
+                document.cookie = `token=${localToken}; path=/; max-age=86400; SameSite=Strict`;
+            }
+        })();
+    </script>
 </head>
 <body>
     <nav class="navbar">

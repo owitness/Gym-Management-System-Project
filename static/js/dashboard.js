@@ -2,18 +2,51 @@
 // Authentication Utilities
 // ==========================
 
-function getAuthHeaders() {
-    let token = localStorage.getItem('gym_token');
-
-    if (!token) {
-        const urlParams = new URLSearchParams(window.location.search);
-        token = urlParams.get('token');
-
-        if (token) {
-            localStorage.setItem('gym_token', token);
-        }
+/**
+ * Checks and ensures proper token availability for authentication
+ * Returns the token if available
+ */
+function ensureAuthentication() {
+    // First try to get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get("token");
+    
+    // Then try localStorage
+    const localToken = localStorage.getItem("gym_token");
+    
+    // If token in URL, save to localStorage and return it
+    if (urlToken) {
+        localStorage.setItem("gym_token", urlToken);
+        
+        // Also set a cookie for server-side use on page refresh
+        document.cookie = `token=${urlToken}; path=/; max-age=86400; SameSite=Strict`;
+        
+        // Always remove token from URL for security
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        return urlToken;
     }
+    
+    // If token in localStorage but not in URL
+    if (localToken && !urlToken) {
+        // Set a cookie for server-side use on page refresh
+        document.cookie = `token=${localToken}; path=/; max-age=86400; SameSite=Strict`;
+        
+        // No longer add token to URL to prevent security issues
+        return localToken;
+    }
+    
+    // No token found - redirect to login
+    window.location.href = '/login';
+    return null;
+}
 
+/**
+ * Get authentication headers for API calls
+ */
+function getAuthHeaders() {
+    const token = localStorage.getItem('gym_token');
+    
     const headers = {
         'Content-Type': 'application/json'
     };
@@ -40,7 +73,8 @@ function navigateTo(route) {
         return;
     }
 
-    window.location.href = `/${route}?token=${token}`;
+    // Navigate without exposing token in URL
+    window.location.href = `/${route}`;
 }
 
 function navigateToCalendar() {
@@ -49,11 +83,18 @@ function navigateToCalendar() {
         window.location.href = '/login';
         return;
     }
-    window.location.href = `/calendar?token=${token}`;
+    // Navigate without exposing token in URL
+    window.location.href = `/calendar`;
 }
 
 function logout() {
+    // Clear localStorage
     localStorage.removeItem('gym_token');
+    
+    // Clear the cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    
+    // Redirect to login
     window.location.href = "/login";
 }
 
@@ -189,14 +230,11 @@ async function cancelMembership() {
 // ==========================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-
-    if (token) {
-        localStorage.setItem("gym_token", token);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
+    // Ensure user is authenticated before loading dashboard data
+    const token = ensureAuthentication();
+    if (!token) return; // If no token, we've already redirected to login
+    
+    // Load dashboard data
     loadDashboardData();
     loadProfileData();
     loadMembershipData();

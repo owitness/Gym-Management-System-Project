@@ -35,12 +35,16 @@ def create_token(user_data, expiry_hours=24):
             "refresh_token": False  # Indicates this is not a refresh token
         }
 
-        # Encode the token
+        # Encode the token using PyJWT
         token = jwt.encode(
             payload,
             SECRET_KEY,
             algorithm="HS256"
         )
+        
+        # PyJWT.encode returns bytes in Python 3, convert to string
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
         
         return token
 
@@ -60,7 +64,11 @@ def create_refresh_token(user_data, expiry_days=7):
             "exp": int(exp_time.timestamp()),
             "refresh_token": True  # Indicates this is a refresh token
         }
-        return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+        token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+        # PyJWT.encode returns bytes in Python 3, convert to string
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+        return token
     except Exception as e:
         logger.error(f"Refresh token creation failed: {str(e)}")
         raise AuthenticationError(f"Failed to create refresh token: {str(e)}")
@@ -123,14 +131,21 @@ def authenticate(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
+        
+        # 1. Check Authorization header
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             parts = auth_header.split(" ")
             if len(parts) == 2:
                 token = parts[1]
-        else:
-            # Check for token in query parameter
+        
+        # 2. If not in header, check query parameter (less secure)
+        if not token:
             token = request.args.get('token')
+            
+        # 3. If still not found, check cookies (secure if using SameSite=Strict)
+        if not token and 'token' in request.cookies:
+            token = request.cookies.get('token')
 
         if not token:
             return jsonify({'error': 'Authentication token is missing'}), 401
