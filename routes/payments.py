@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from db import get_db, get_db_connection
 from middleware import authenticate
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 payments_bp = Blueprint("payments", __name__)
@@ -20,8 +20,31 @@ def add_payment_method(user):
         if missing_fields:
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
-        # Format expiration date
-        exp_date = datetime.strptime(data['exp'], '%Y-%m-%d').date()
+        # Format expiration date from MM/YY to YYYY-MM-DD
+        try:
+            exp_parts = data['exp'].split('/')
+            if len(exp_parts) != 2:
+                return jsonify({"error": "Invalid expiration date format. Use MM/YY"}), 400
+                
+            month = int(exp_parts[0])
+            year = int(exp_parts[1])
+            
+            # Convert 2-digit year to 4-digit year (assuming 20xx)
+            if year < 100:
+                year += 2000
+                
+            # Set day to last day of the month
+            if month == 12:
+                next_month = 1
+                next_year = year + 1
+            else:
+                next_month = month + 1
+                next_year = year
+                
+            exp_date = (datetime(next_year, next_month, 1) - timedelta(days=1)).date()
+            
+        except ValueError:
+            return jsonify({"error": "Invalid expiration date format. Use MM/YY"}), 400
 
         with get_db() as conn:
             cursor = conn.cursor()
@@ -86,3 +109,93 @@ def process_payment(user):
     except Exception as e:
         logger.error(f"Error processing payment: {str(e)}")
         return jsonify({"error": "Payment processing failed"}), 500
+
+# 🔹 Get Payment Methods
+@payments_bp.route("/payment-methods", methods=["GET"])
+@authenticate
+def get_payment_methods(user):
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            cursor.execute("""
+                SELECT id, card_number, exp, card_holder_name
+                FROM payment_methods
+                WHERE user_id = %s AND saved = TRUE
+                ORDER BY id DESC
+            """, (user["id"],))
+            
+            payment_methods = cursor.fetchall()
+            cursor.close()
+            
+            return jsonify(payment_methods)
+            
+    except Exception as e:
+        logger.error(f"Error getting payment methods: {str(e)}")
+        return jsonify({"error": "Failed to get payment methods"}), 500
+
+# 🔹 Delete Payment Method
+@payments_bp.route("/payment-methods/<int:method_id>", methods=["DELETE"])
+@authenticate
+def delete_payment_method(user, method_id):
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Verify the payment method belongs to the user
+            cursor.execute("""
+                SELECT id FROM payment_methods
+                WHERE id = %s AND user_id = %s
+            """, (method_id, user["id"]))
+            
+            if not cursor.fetchone():
+                return jsonify({"error": "Payment method not found"}), 404
+            
+            # Delete the payment method
+            cursor.execute("""
+                DELETE FROM payment_methods
+                WHERE id = %s AND user_id = %s
+            """, (method_id, user["id"]))
+            
+            conn.commit()
+            cursor.close()
+            
+            logger.info(f"Payment method {method_id} deleted for user {user['id']}")
+            
+            return jsonify({"message": "Payment method deleted successfully"})
+            
+    except Exception as e:
+        logger.error(f"Error deleting payment method: {str(e)}")
+        return jsonify({"error": "Failed to delete payment method"}), 500
+
+# 🔹 Get Payment History
+@payments_bp.route("/payments/history", methods=["GET"])
+@authenticate
+def get_payment_history(user):
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get payment history with payment method details
+            cursor.execute("""
+                SELECT p.id, p.amount, p.status, p.transaction_date,
+                       pm.card_number, pm.card_holder_name
+                FROM payments p
+                LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+                WHERE p.user_id = %s
+                ORDER BY p.transaction_date DESC
+            """, (user["id"],))
+            
+            payments = cursor.fetchall()
+            cursor.close()
+            
+            # Format dates and amounts
+            for payment in payments:
+                payment["transaction_date"] = payment["transaction_date"].strftime("%Y-%m-%d")
+                payment["amount"] = float(payment["amount"])
+            
+            return jsonify(payments)
+            
+    except Exception as e:
+        logger.error(f"Error getting payment history: {str(e)}")
+        return jsonify({"error": "Failed to get payment history"}), 500

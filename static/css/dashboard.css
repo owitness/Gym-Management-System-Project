@@ -83,7 +83,7 @@ h2 {
 }
 
 /* Target only the Attendance History card */
-.attendance-grid .attendance-card:nth-of-type(2) {
+.attendance-grid .attendance-card:nth-of-type(2), .payment-grid .payment-card:nth-of-type(1) {
     height: 350px; /* You can adjust the height */
     display: flex;
     flex-direction: column;
@@ -91,7 +91,7 @@ h2 {
 }
 
 /* Make the scrollable area take the rest of the card's space */
-#attendance-history {
+#attendance-history, #payment-methods {
     flex: 1;
     overflow-y: auto;
     margin-top: 10px;
@@ -99,11 +99,11 @@ h2 {
 }
 
 /* Optional: nice scrollbar for modern browsers */
-#attendance-history::-webkit-scrollbar {
+#attendance-history::-webkit-scrollbar, #payment-methods::-webkit-scrollbar {
     width: 6px;
 }
 
-#attendance-history::-webkit-scrollbar-thumb {
+#attendance-history::-webkit-scrollbar-thumb, #payment-methods::-webkit-scroll-thumb {
     background-color: #888;
     border-radius: 4px;
 }

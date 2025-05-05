@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Methods - Gym Management System</title>
     <link href="../static/css/dashboard.css" type="text/css" rel="stylesheet">
-    <script src="../static/js/payment-methods.js"></script>
 </head>
 <body>
     <nav class="navbar">
@@ -14,12 +13,6 @@
             <a href="{{ url_for('payment_methods') }}" class="active">Payments</a>
             <a href="{{ url_for('attendance') }}">Attendance</a>
             <a href="#" onclick="logout()" id="logoutnav">Logout</a>
-            <!--
-            <a href="#" onclick="navigateTo('dashboard')">Dashboard</a>
-            <a href="#" onclick="navigateTo('payment-methods')" class="active">Payments</a>
-            <a href="#" onclick="navigateTo('attendance')">Attendance</a>
-            <a href="#" onclick="logout()">Logout</a>
-            -->
         </div>
     </nav>
 
@@ -30,7 +23,7 @@
             <!-- Saved Payment Methods -->
             <div class="payment-card">
                 <h2>Saved Payment Methods</h2>
-                <div id="payment-methods-list" class="scrollable-list">
+                <div id="payment-methods" class="scrollable-list">
                     <!-- Saved payment methods will be loaded here -->
                      <p>Card Holder: <span id="cardholder"></span></p>
                      <p>Card Number: <span id="cardnumber"></span></p>
@@ -52,7 +45,7 @@
                     <p>Date: <span id="upcomingDate"></span></p>
                     <p>Amount: <span id="upcomingAmount"></span></p>
                     <p>Payment Method: <span id="upcomingMethod"></span></p>
-                    <button onclick="scrollToPaymentsHistory()" class="btn-primary">View Full Payment History</button>
+                    <button onclick="scrollToPaymentHistory()" class="btn-primary">View Full Payment History</button>
                 </div>
             </div>
 
@@ -81,7 +74,7 @@
     </div>
 
     <!-- Add Payment Method Modal -->
-    <div id="addPaymentMethod" class="modal">
+    <div id="add-payment-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('add-payment-modal')"></span>
             <h2>Add Payment Method</h2>
@@ -153,22 +146,22 @@
         // Load saved payment methods
         async function loadPaymentMethods() {
             try {
-                const response = await fetch('/api/dashboard/summary', {
+                const response = await fetch('/api/payment-methods', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
                 const data = await response.json();
                 
-                const methodsList = document.getElementById('payment-methods-list');
+                const methodsList = document.getElementById('payment-methods');
                 const defaultMethodSelect = document.getElementById('default-payment-method');
                 
-                if (!data.payment_methods || data.payment_methods.length === 0) {
+                if (!data || data.length === 0) {
                     methodsList.innerHTML = '<p>No saved payment methods</p>';
                     return;
                 }
                 
-                methodsList.innerHTML = data.payment_methods.map(method => `
+                methodsList.innerHTML = data.map(method => `
                     <div class="payment-method-item">
                         <h3>Card ending in ${method.card_number.slice(-4)}</h3>
                         <p>Expires: ${method.exp}</p>
@@ -179,11 +172,12 @@
                 
                 // Update default payment method selector
                 defaultMethodSelect.innerHTML = '<option value="">Select a payment method</option>' +
-                    data.payment_methods.map(method => `
+                    data.map(method => `
                         <option value="${method.id}">Card ending in ${method.card_number.slice(-4)}</option>
                     `).join('');
             } catch (error) {
                 console.error('Error loading payment methods:', error);
+                document.getElementById('payment-methods').innerHTML = '<p>Error loading payment methods</p>';
             }
         }
 
@@ -195,24 +189,55 @@
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
                 });
-                const payments = await response.json();
                 
+                if (!response.ok) {
+                    throw new Error('Failed to load payment history');
+                }
+                
+                const payments = await response.json();
                 const historyList = document.getElementById('payment-history');
+                
                 if (!payments || payments.length === 0) {
                     historyList.innerHTML = '<p>No payment history</p>';
                     return;
                 }
                 
-                historyList.innerHTML = payments.map(payment => `
-                    <div class="payment-item">
-                        <h3>${payment.amount.toFixed(2)} USD</h3>
-                        <p>Date: ${new Date(payment.transaction_date).toLocaleDateString()}</p>
-                        <p>Status: <span class="badge ${payment.status.toLowerCase()}">${payment.status}</span></p>
-                        <p>Card: **** ${payment.card_number.slice(-4)}</p>
+                // Display the most recent payment
+                const recentPayment = payments[0];
+                document.getElementById('recentDate').textContent = recentPayment.transaction_date;
+                document.getElementById('recentAmount').textContent = `$${recentPayment.amount.toFixed(2)}`;
+                document.getElementById('recentMethod').textContent = `**** ${recentPayment.card_number.slice(-4)}`;
+                
+                // Display upcoming payment (if any)
+                const upcomingPayment = payments.find(p => p.status === 'Pending');
+                if (upcomingPayment) {
+                    document.getElementById('upcomingDate').textContent = upcomingPayment.transaction_date;
+                    document.getElementById('upcomingAmount').textContent = `$${upcomingPayment.amount.toFixed(2)}`;
+                    document.getElementById('upcomingMethod').textContent = `**** ${upcomingPayment.card_number.slice(-4)}`;
+                } else {
+                    document.getElementById('upcomingDate').textContent = 'No upcoming payments';
+                    document.getElementById('upcomingAmount').textContent = 'N/A';
+                    document.getElementById('upcomingMethod').textContent = 'N/A';
+                }
+                
+                // Update full payment history section
+                const fullHistory = document.getElementById('paymentHistory');
+                fullHistory.innerHTML = `
+                    <h2>Full Payment History</h2>
+                    <div class="payment-history-list">
+                        ${payments.map(payment => `
+                            <div class="payment-item">
+                                <h3>$${payment.amount.toFixed(2)}</h3>
+                                <p>Date: ${payment.transaction_date}</p>
+                                <p>Status: <span class="badge ${payment.status.toLowerCase()}">${payment.status}</span></p>
+                                <p>Card: **** ${payment.card_number.slice(-4)}</p>
+                            </div>
+                        `).join('')}
                     </div>
-                `).join('');
+                `;
             } catch (error) {
                 console.error('Error loading payment history:', error);
+                document.getElementById('payment-history').innerHTML = '<p>Error loading payment history</p>';
             }
         }
 
@@ -223,7 +248,7 @@
             const data = Object.fromEntries(formData.entries());
             
             try {
-                const response = await fetch('/api/dashboard/payment-methods', {
+                const response = await fetch('/api/payment-methods', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -242,6 +267,7 @@
                 }
             } catch (error) {
                 console.error('Error adding payment method:', error);
+                alert('Failed to add payment method. Please try again.');
             }
         }
 
@@ -252,7 +278,7 @@
             }
             
             try {
-                const response = await fetch(`/api/dashboard/payment-methods/${methodId}`, {
+                const response = await fetch(`/api/payment-methods/${methodId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -267,6 +293,7 @@
                 }
             } catch (error) {
                 console.error('Error deleting payment method:', error);
+                alert('Failed to delete payment method. Please try again.');
             }
         }
 
@@ -335,6 +362,21 @@
             })
             .catch(error => console.error('Error loading auto-payment settings:', error));
         });
+        
+        // Functions to scroll to view for adding payment method and history
+        function scrollToAddPayment() {
+            const element = document.getElementById('add-payment-modal');
+            if(element) {
+                element.scrollIntoView({behavior: 'smooth'});
+            }
+        }
+
+        function scrollToPaymentHistory() {
+            const element = document.getElementById('paymentHistory');
+            if(element) {
+                element.scrollIntoView({behavior: 'smooth'});
+            }
+        }
     </script>
 </body>
 </html> 
