@@ -1,127 +1,595 @@
 /* GLOBAL STYLES */
 body {
     background-color: #fcf7f8;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    color: #333;
+    line-height: 1.5;
 }
 
 h1 {
-    color: lightblue;
+    color: #292e70;
     text-align: center;
-    background-color: white;
-    font-size: 60pt;
-    margin-bottom: 0px;
-    margin-top: 0px;
+    font-size: 3.5rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.02em;
 }
 
 h2 {
     color: #292e70;
-    font-size: 2em;
+    font-size: 2.5rem;
     text-align: center;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
 }
 
 .headcontainer {
-    background-color: white;
-    height: 75px;
+    background-color: rgba(255, 255, 255, 0.9);
+    height: 80px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 2.5rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .headcontainer img {
-    width: 150px;
-    float: left;
-    position: absolute;
+    width: auto;
+    height: 70px;
+    position: static;
+    margin-right: auto;
 }
 
 nav {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+nav a {
+    margin: 0 15px;
+    color: #292e70;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+nav a:after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background-color: #292e70;
+    transition: width 0.3s ease;
+}
+
+nav a:hover:after {
+    width: 100%;
 }
 
 a {
     text-decoration: none;
-    margin: 20px;
-    height: 50px;
+    height: auto;
     text-align: center;
 }
 
 a:visited {
-    color: darkblue;
+    color: #292e70;
 }
 
 a:hover {
-    background-color: #c6e5f3;
-    opacity: 0.5;
-    border-radius: 40px;
+    background-color: transparent;
+    opacity: 1;
+    border-radius: 0;
+}
+
+#auth-buttons {
+    display: flex;
+    align-items: center;
+    margin-left: 25px;
 }
 
 .button {
-    float: right;
     text-decoration: none;
-    border-radius: 25px;
+    border-radius: 50px;
     background-color: #292e70;
-    color: #e0f7fa;
+    color: #fff;
     border: none;
     height: 40px;
-    width: 100px;
+    min-width: 100px;
+    padding: 0 20px;
     font-size: 15px;
-    font-weight: bold;
-    margin-top: 20px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     text-align: center;
     line-height: 40px;
+    box-shadow: 0 4px 10px rgba(41, 46, 112, 0.2);
+    margin-left: 15px;
+    float: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .button:visited {
-    color: #e0f7fa;
+    color: #fff;
 }
 
 .button:hover {
-    color: #292e70;
+    background-color: #3a3f8a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(41, 46, 112, 0.3);
+}
+
+/* HERO SECTION */
+.hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    background-image: url("../images/headerbackground.jpg");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding-top: 70px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.particles-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(41, 46, 112, 0.85) 0%, rgba(41, 46, 112, 0.7) 100%);
+    z-index: 2;
+}
+
+.hero-content {
+    z-index: 3;
+    max-width: 800px;
+    padding: 0 2rem;
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-title {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: transparent;
+    line-height: 1.2;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Add subtle floating animation to hero content */
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.hero-content {
+    animation: fadeIn 1s ease-out;
+}
+
+.hero-text {
+    font-size: 1.3rem;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 300;
+}
+
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+/* Add a glow effect to buttons on hover */
+.cta-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 30px;
+    height: 50px;
+    background-color: #292e70;
+    color: white !important;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.cta-button:hover {
+    background-color: #3a3f8a;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cta-button:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.cta-button:hover:before {
+    opacity: 1;
+    animation: shine 1.5s ease forwards;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-300%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+.cta-button.secondary {
+    background-color: transparent;
+    color: white !important;
+    border: 2px solid white;
+}
+
+.cta-button.secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* SECTIONS */
 .classes {
     text-align: center;
+    background-color: #f9f9f9;
+    padding: 6rem 2rem;
+    margin: 0;
+}
+
+.section-title-container {
+    margin-bottom: 3rem;
+}
+
+.section-subtitle {
+    color: #666;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .classes > ul {
     list-style-type: none;
+    padding: 0;
+}
+
+.class-cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-top: 2rem;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.class-card {
+    background-color: white;
+    border-radius: 16px;
+    overflow: hidden;
+    width: 280px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s ease;
+}
+
+.class-card:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.class-icon {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #c6e5f3;
+    color: #292e70;
+    font-size: 3.5rem;
+    transition: all 0.3s ease;
+    background-size: cover;
+    background-position: center;
+}
+
+.class-card:hover .class-icon {
+    background-color: #292e70;
+    color: white;
+}
+
+.class-icon i {
+    display: none;
+}
+
+.yoga-img {
+    background-image: url("../images/groupfitnessroom.jpg");
+}
+
+.cycling-img {
+    background-image: url("../images/spinbikes.jpg");
+}
+
+.strength-img {
+    background-image: url("../images/home1.jpg");
+}
+
+.kickboxing-img {
+    background-image: url("../images/kickboxing.jpg");
+}
+
+.pilates-img {
+    background-image: url("../images/pilates.jpg");
+}
+
+.class-content {
+    padding: 1.8rem;
+}
+
+.class-card h3 {
+    color: #292e70;
+    margin: 0 0 0.8rem 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.class-card p {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
 }
 
 .staff {
     display: flex;
-    background-color: #c6e5f3;
-    height: 1200px;
+    background-color: #f0f7ff;
+    padding: 6rem 2rem;
     flex-wrap: wrap;
-    justify-content: space-evenly;
+    justify-content: center;
+}
+
+.staff-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .trainers {
-    border: 5px solid white;
-    height: 450px;
-    width: 400px;
-    padding: 20px;
-    margin: 10px; 
-    background-image: linear-gradient(#d4cfc9, #f8f9fa);
+    border: none;
+    height: auto;
+    width: 300px;
+    padding: 30px;
+    margin: 20px; 
+    background-color: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.trainers:hover {
+    transform: translateY(-15px);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.12);
 }
 
 .staff h2 {
-    border: none;
     width: 100%;
     text-align: center;
+    margin-bottom: 1rem;
 }
 
 .staff img {
-    width: 200px;
+    width: 160px;
+    height: 160px;
+    object-fit: cover;
+    object-position: center 20%;
     display: block;
-    margin: auto;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.trainers:hover img {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
 }
 
 .staff p {
     text-align: center;
+    line-height: 1.6;
+    margin-top: 1rem;
+    color: #555;
+    font-size: 0.95rem;
 }
 
-.staff strong {
+.staff h3 {
     color: #292e70;
-    font-size: 15pt;
+    text-align: center;
+    margin: 1rem 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.trainer-info {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.footer {
+    background-color: #292e70;
+    color: white;
+    text-align: center;
+    padding: 4rem 2rem;
+    margin-top: 0;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.footer-section {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.footer-section h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.footer-section h3:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -10px;
+    width: 30px;
+    height: 2px;
+    background-color: #c6e5f3;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 10px;
+}
+
+.footer-section ul li a {
+    color: #ccc;
+    transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+    color: white;
+}
+
+.footer p {
+    margin: 0.5rem 0;
+}
+
+.social-links {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.social-links a {
+    color: white;
+    font-size: 1.3rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.social-links a:hover {
+    color: #292e70;
+    background-color: white;
+    transform: translateY(-3px);
+}
+
+.footer-bottom {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #aaa;
 }
 
 .memberships {
@@ -248,48 +716,45 @@ button {
 
 .class-item button {
     margin-top: 5px;
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    background-color: #0a73b8;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
 }
 
-.class-item button:disabled {
-    background-color: gray;
-    cursor: not-allowed;
-}
-
-.class-list small {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.75rem;
-    color: #2e8b57;
-}
-
-.calendar-nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-#month-header {
-    margin: 0;
-    font-size: 24px;
-    font-weight: bold;
-    color: #292e70;
-}
-
-.day .dot {
-    width: 8px;
-    height: 8px;
-    background-color: #0077cc;
-    border-radius: 50%;
-    margin: 4px auto 0;
+/* Responsive styles */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-text {
+        font-size: 1.1rem;
+    }
+    
+    .hero-content {
+        padding: 0 1rem;
+    }
+    
+    .cta-button {
+        width: 80%;
+        margin: 0.5rem auto;
+    }
+    
+    .headcontainer {
+        height: auto;
+        padding: 1rem;
+    }
+    
+    nav {
+        margin-top: 60px;
+    }
+    
+    .trainers {
+        width: 100%;
+        max-width: 350px;
+    }
+    
+    .class-card {
+        width: 100%;
+        max-width: 350px;
+    }
 }
 
 .modal {

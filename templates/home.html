@@ -1,117 +1,374 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Home Page</title>
-        <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const token = localStorage.getItem('gym_token') || 
-                              document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-                
-                if (token) {
-                    document.getElementById('auth-buttons').innerHTML = `
-                        <a href="{{ url_for('dashboard') }}" class="button">My Account</a>
-                    `;
-                }
-            });
-        </script>
-    </head>
-    <body>
-        <div class="headcontainer">
-            <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Gym Logo">
-            <nav>
-                <a href="{{ url_for('home') }}">Home</a>
-                <a href="{{ url_for('contact') }}">Contact</a>
-                <a href="{{ url_for('memberships') }}">Memberships</a>
-                <a href="{{ url_for('admin_dashboard') }}">Admin</a>
-
-                <div id="auth-buttons">
-                    <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
-                    <a href="{{ url_for('login') }}" class="button">Sign In</a>
-                </div>
-            </nav>
-        </div>
-        <div>
-            <br>
-            <br>
-            <br>
-            <h2>Welcome to Indiana Fitness Center - Your Fitness Journey Starts Here!</h2>
-            <blockquote>At Indiana Fitness Center, we believe that fitness is for everyone. Whether you're a beginner 
-                looking to build healthy habits or an experienced athlete pushing your limits, our 
-                state-of-the-art facility, expert trainers, and supportive community are here to help
-                you reach your goals. With top-of-the-line equipment, dynamic group classes, and 
-                personalized training programs, we make working out fun, effective, and rewarding.
-                <br>
-                <br>
-                Join us today and take the first step toward a healthier and stronger you!
-            </blockquote>
-        </div>
-        <div class="classes">
-            <h2>Offered Classes</h2>
-            <ul>
-                <li>Yoga</li>
-                <li>Indoor Cycling</li>
-                <li>Pilates</li>
-                <li>Strength Training</li>
-                <li>Kickboxing</li>
-            </ul>
-        </div>
-        <div class="staff">
-            <h2>Meet our Staff</h2>
-            <div class="trainers">
-                <img src="{{ url_for('static', filename='images/avastrong.jpg') }}" alt="Ava Strong">
-                <p><strong>Ava Strong</strong>
-                    <br>Ava has been with us for two years, leading our yoga and pilates group fitness classes 
-                    with energy and expertise. She is also one of our personal trainers, and would be more
-                    than happy to help you grow. She combines strength training with mindfulness, creating
-                    a well-rounded exercise experience for you. Ava is just as commited to your fitness goals
-                    as you are!
-                </p>
-            </div>
-            <div class="trainers">
-                <img src="{{ url_for('static', filename='images/taylorflexman.jpg') }}" alt="Taylor Flexman">
-                <p><strong>Taylor Flexman</strong>
-                    <br>Taylor is an established personal trainer who has been a valued part of Indiana Fitness
-                    center for the past eight months. He has a strong foundation in strenght training and 
-                    functional fitness. Taylor would love to help you establish, work towards, and crush any
-                    personal fitness goals you have!
-                </p>
-            </div>
-            <div class="trainers">
-                <img src="{{ url_for('static', filename='images/maxsteele.jpg') }}" alt="Max Steele">
-                <p><strong>Max Steele</strong>
-                    <br>Max is one of our longest employees, who has been with us since we opened 7 years ago.
-                    He offers awesome strength training and kickboxing classes, along with being one of our most
-                    sought after personal trainers. If you aren't afraid of a little hard work, Max will help 
-                    you reach your full potential and see the results you want!
-                </p>
-            </div>
-            <div class="trainers">
-                <img src="{{ url_for('static', filename='images/sierrapowers.jpg') }}" alt="Sierra Powers">
-                <p><strong>Sierra Powers</strong>
-                    <br>Sierra has been apart of Indiana Fitness Center for 4 years, where she dominates the
-                    indoor cycling realm. Her fun, upbeat classes never fail to spark an interest in building
-                    healthy habits while also pushing the limits. She also offers personal training sessions for 
-                    anyone daring enough to take her dynamic and results-driven approach. 
-                </p>
-            </div>
-        </div>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indiana Fitness Center</title>
+    <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('gym_token') || 
+                          document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+            
+            if (token) {
+                document.getElementById('auth-buttons').innerHTML = `
+                    <a href="{{ url_for('dashboard') }}" class="button">My Account</a>
+                `;
+            }
+            
+            const myAccountBtn = document.querySelector('#auth-buttons a[href*="dashboard"]');
+            if (myAccountBtn) {
+                myAccountBtn.addEventListener('click', handleMyAccountClick);
+            }
+            
+            // Initialize the particle animation system
+            initParticleAnimation();
+        });
         
-        <script>
-            function handleMyAccountClick(event) {
-                const token = localStorage.getItem('gym_token');
-                if (!token) {
-                    event.preventDefault();
-                    window.location.href = "{{ url_for('login') }}";
+        function handleMyAccountClick(event) {
+            const token = localStorage.getItem('gym_token');
+            if (!token) {
+                event.preventDefault();
+                window.location.href = "{{ url_for('login') }}";
+            }
+        }
+        
+        function initParticleAnimation() {
+            const heroSection = document.querySelector('.hero-section');
+            
+            // Create canvas element for particles
+            const canvas = document.createElement('canvas');
+            canvas.classList.add('particles-canvas');
+            
+            // Insert canvas as first child of hero section
+            heroSection.insertBefore(canvas, heroSection.firstChild);
+            
+            // Set canvas size
+            function resizeCanvas() {
+                const rect = heroSection.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+            
+            resizeCanvas();
+            
+            // Get canvas context
+            const ctx = canvas.getContext('2d');
+            
+            // Particle configuration
+            const particlesArray = [];
+            const numberOfParticles = 100;
+            let mousePosition = {
+                x: undefined,
+                y: undefined,
+                radius: 150
+            };
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                resizeCanvas();
+                init();
+            });
+            
+            // Track mouse position with correct coordinates
+            heroSection.addEventListener('mousemove', function(event) {
+                const rect = canvas.getBoundingClientRect();
+                mousePosition.x = event.clientX - rect.left;
+                mousePosition.y = event.clientY - rect.top;
+            });
+            
+            heroSection.addEventListener('mouseleave', function() {
+                mousePosition.x = undefined;
+                mousePosition.y = undefined;
+            });
+            
+            // Particle class
+            class Particle {
+                constructor(x, y, directionX, directionY, size, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.directionX = directionX;
+                    this.directionY = directionY;
+                    this.size = size;
+                    this.color = color;
+                    this.speed = 0.5;
+                }
+                
+                // Draw particle
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                
+                // Update particle position and handle mouse interaction
+                update() {
+                    // Move particles even without mouse interaction
+                    if (this.x > canvas.width || this.x < 0) {
+                        this.directionX = -this.directionX;
+                    }
+                    if (this.y > canvas.height || this.y < 0) {
+                        this.directionY = -this.directionY;
+                    }
+                    
+                    // Basic movement
+                    this.x += this.directionX * this.speed;
+                    this.y += this.directionY * this.speed;
+                    
+                    // Check mouse collision
+                    if (mousePosition.x !== undefined && mousePosition.y !== undefined) {
+                        let dx = mousePosition.x - this.x;
+                        let dy = mousePosition.y - this.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < mousePosition.radius) {
+                            // Calculate push direction away from mouse
+                            if (mousePosition.x < this.x && this.x < canvas.width - this.size * 10) {
+                                this.x += 3;
+                            }
+                            if (mousePosition.x > this.x && this.x > this.size * 10) {
+                                this.x -= 3;
+                            }
+                            if (mousePosition.y < this.y && this.y < canvas.height - this.size * 10) {
+                                this.y += 3;
+                            }
+                            if (mousePosition.y > this.y && this.y > this.size * 10) {
+                                this.y -= 3;
+                            }
+                        }
+                    }
+                    
+                    // Draw the particle
+                    this.draw();
                 }
             }
             
-            document.addEventListener('DOMContentLoaded', function() {
-                const myAccountBtn = document.querySelector('#auth-buttons a[href*="dashboard"]');
-                if (myAccountBtn) {
-                    myAccountBtn.addEventListener('click', handleMyAccountClick);
+            // Create particles
+            function init() {
+                particlesArray.length = 0;
+                for (let i = 0; i < numberOfParticles; i++) {
+                    const size = Math.random() * 5 + 1;
+                    const x = Math.random() * (canvas.width - size * 2) + size;
+                    const y = Math.random() * (canvas.height - size * 2) + size;
+                    const directionX = (Math.random() - 0.5) * 1;
+                    const directionY = (Math.random() - 0.5) * 1;
+                    
+                    // Colors from your brand palette
+                    const colors = [
+                        'rgba(198, 229, 243, 0.7)', // #c6e5f3
+                        'rgba(41, 46, 112, 0.6)',   // #292e70
+                        'rgba(224, 247, 250, 0.5)'  // #e0f7fa
+                    ];
+                    
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
                 }
-            });
-        </script>
-    </body>
+            }
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                }
+                
+                connect();
+            }
+            
+            // Connect particles with lines if they're close enough
+            function connect() {
+                let opacityValue = 0.8;
+                for (let a = 0; a < particlesArray.length; a++) {
+                    for (let b = a; b < particlesArray.length; b++) {
+                        const dx = particlesArray[a].x - particlesArray[b].x;
+                        const dy = particlesArray[a].y - particlesArray[b].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 100) {
+                            opacityValue = 1 - (distance / 100);
+                            ctx.strokeStyle = `rgba(198, 229, 243, ${opacityValue})`;
+                            ctx.lineWidth = 0.8;
+                            ctx.beginPath();
+                            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            // Initialize and start animation
+            init();
+            animate();
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div class="headcontainer">
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}" id="logo" alt="Indiana Fitness Center Logo">
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('memberships') }}">Memberships</a>
+            <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+
+            <div id="auth-buttons">
+                <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                <a href="{{ url_for('login') }}" class="button">Sign In</a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Welcome to Indiana Fitness Center</h1>
+            <p class="hero-text">Your fitness journey starts here. State-of-the-art equipment, expert trainers, and a supportive community to help you reach your goals.</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('memberships') }}" class="cta-button">Explore Memberships</a>
+                <a href="{{ url_for('signup_page') }}" class="cta-button secondary">Join Today</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes Section -->
+    <div class="classes">
+        <div class="section-title-container">
+            <h2>Our Classes</h2>
+            <p class="section-subtitle">Discover our diverse range of fitness classes designed to challenge, motivate, and transform.</p>
+        </div>
+        
+        <div class="class-cards">
+            <div class="class-card">
+                <div class="class-icon yoga-img">
+                    <i class="fas fa-spa"></i>
+                </div>
+                <div class="class-content">
+                    <h3>Yoga</h3>
+                    <p>Find balance and inner peace</p>
+                </div>
+            </div>
+            
+            <div class="class-card">
+                <div class="class-icon cycling-img">
+                    <i class="fas fa-bicycle"></i>
+                </div>
+                <div class="class-content">
+                    <h3>Indoor Cycling</h3>
+                    <p>High-energy cardio workout</p>
+                </div>
+            </div>
+            
+            <div class="class-card">
+                <div class="class-icon strength-img">
+                    <i class="fas fa-dumbbell"></i>
+                </div>
+                <div class="class-content">
+                    <h3>Strength Training</h3>
+                    <p>Build muscle and power</p>
+                </div>
+            </div>
+            
+            <div class="class-card">
+                <div class="class-icon kickboxing-img">
+                    <i class="fas fa-fist-raised"></i>
+                </div>
+                <div class="class-content">
+                    <h3>Kickboxing</h3>
+                    <p>Full-body combat fitness</p>
+                </div>
+            </div>
+            
+            <div class="class-card">
+                <div class="class-icon pilates-img">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="class-content">
+                    <h3>Pilates</h3>
+                    <p>Core strength and flexibility</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trainers Section -->
+    <div class="staff">
+        <div class="section-title-container">
+            <h2>Meet Our Expert Trainers</h2>
+            <p class="section-subtitle">Our professional trainers are dedicated to helping you achieve your fitness goals.</p>
+        </div>
+        
+        <div class="staff-container">
+            <div class="trainers">
+                <img src="{{ url_for('static', filename='images/avastrong.jpg') }}" alt="Ava Strong">
+                <div class="trainer-info">
+                    <h3>Ava Strong</h3>
+                    <p>Ava has been with us for two years, leading our yoga and pilates group fitness classes with energy and expertise. She combines strength training with mindfulness, creating a well-rounded exercise experience for you.</p>
+                </div>
+            </div>
+            
+            <div class="trainers">
+                <img src="{{ url_for('static', filename='images/taylorflexman.jpg') }}" alt="Taylor Flexman">
+                <div class="trainer-info">
+                    <h3>Taylor Flexman</h3>
+                    <p>Taylor is an established personal trainer who has been a valued part of Indiana Fitness center for the past eight months. He has a strong foundation in strength training and functional fitness.</p>
+                </div>
+            </div>
+            
+            <div class="trainers">
+                <img src="{{ url_for('static', filename='images/maxsteele.jpg') }}" alt="Max Steele">
+                <div class="trainer-info">
+                    <h3>Max Steele</h3>
+                    <p>Max is one of our longest employees, who has been with us since we opened 7 years ago. He offers awesome strength training and kickboxing classes, along with being one of our most sought after personal trainers.</p>
+                </div>
+            </div>
+            
+            <div class="trainers">
+                <img src="{{ url_for('static', filename='images/sierrapowers.jpg') }}" alt="Sierra Powers">
+                <div class="trainer-info">
+                    <h3>Sierra Powers</h3>
+                    <p>Sierra has been apart of Indiana Fitness Center for 4 years, where she dominates the indoor cycling realm. Her fun, upbeat classes never fail to spark an interest in building healthy habits while also pushing the limits.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About Us</h3>
+                <p>Indiana Fitness Center is dedicated to helping you achieve your fitness goals in a supportive and motivating environment.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                    <li><a href="{{ url_for('memberships') }}">Memberships</a></li>
+                    <li><a href="{{ url_for('signup_page') }}">Join Now</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p>123 School Street, Indiana, PA 15701</p>
+                <p>Phone: 412-555-5555</p>
+                <p>Email: info@indianafitness.com</p>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>© 2025 Indiana Fitness Center. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
 </html>
