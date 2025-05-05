@@ -446,8 +446,13 @@ start_scheduler()
 
 def get_token_from_request():
     """Extract token from request in order of: cookies, URL query param, Authorization header"""
+    token = None
+    
     # 1. Check cookies first (most reliable for page refreshes)
-    token = request.cookies.get('token')
+    if request.cookies:
+        token = request.cookies.get('token')
+        if not token:
+            token = request.cookies.get('gym_token')
     
     # 2. If not in cookies, check URL parameters
     if not token:

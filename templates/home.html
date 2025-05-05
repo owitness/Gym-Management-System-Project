@@ -3,6 +3,18 @@
     <head>
         <title>Home Page</title>
         <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const token = localStorage.getItem('gym_token') || 
+                              document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+                
+                if (token) {
+                    document.getElementById('auth-buttons').innerHTML = `
+                        <a href="{{ url_for('dashboard') }}" class="button">My Account</a>
+                    `;
+                }
+            });
+        </script>
     </head>
     <body>
         <div class="headcontainer">
@@ -13,8 +25,10 @@
                 <a href="{{ url_for('memberships') }}">Memberships</a>
                 <a href="{{ url_for('admin_dashboard') }}">Admin</a>
 
-                <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
-                <a href="{{ url_for('login') }}" class="button">Sign In</a>
+                <div id="auth-buttons">
+                    <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                    <a href="{{ url_for('login') }}" class="button">Sign In</a>
+                </div>
             </nav>
         </div>
         <div>
@@ -82,5 +96,22 @@
                 </p>
             </div>
         </div>
+        
+        <script>
+            function handleMyAccountClick(event) {
+                const token = localStorage.getItem('gym_token');
+                if (!token) {
+                    event.preventDefault();
+                    window.location.href = "{{ url_for('login') }}";
+                }
+            }
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                const myAccountBtn = document.querySelector('#auth-buttons a[href*="dashboard"]');
+                if (myAccountBtn) {
+                    myAccountBtn.addEventListener('click', handleMyAccountClick);
+                }
+            });
+        </script>
     </body>
 </html>

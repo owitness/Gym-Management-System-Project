@@ -4,11 +4,29 @@
     <link href="{{ url_for('static', filename='css/admin.css') }}" type="text/css" rel="stylesheet">
     <link href="{{ url_for('home') }}" rel="home">
     <style>
-        /* Styles for the logout button */
+        /* Styles for the header navigation */
         .header-controls {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            background-color: #0056b3;
         }
         
         .logout-btn {
@@ -26,12 +44,36 @@
             background-color: #d9342b;
         }
         
-        /* Make header relative for absolute positioning of logout button */
+        /* Make header relative for absolute positioning of buttons */
         header {
             position: relative;
         }
     </style>
     <script>
+        // Ensure token is properly set in cookies
+        (function saveTokenToCookie() {
+            // Try URL first (priority)
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get("token");
+            
+            if (urlToken) {
+                // Save to localStorage and cookie
+                localStorage.setItem("gym_token", urlToken);
+                document.cookie = `token=${urlToken}; path=/; max-age=86400; SameSite=Strict`;
+                
+                // Always remove token from URL for security
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+            
+            // If not in URL, try to get from localStorage
+            const localToken = localStorage.getItem("gym_token") || localStorage.getItem("token");
+            if (localToken) {
+                // Save to cookie
+                document.cookie = `token=${localToken}; path=/; max-age=86400; SameSite=Strict`;
+            }
+        })();
+
         document.addEventListener("DOMContentLoaded", function() {
             let statusElements = document.querySelectorAll(".repair-status");
             statusElements.forEach(function(status) {
@@ -332,8 +374,9 @@
 </head>
 <body>
     <header>
-        <h1>Gym Admin Dashboard</h1>
+        <h1>Admin Dashboard</h1>
         <div class="header-controls">
+            <a href="{{ url_for('home') }}" class="nav-btn">Home</a>
             <button id="logoutBtn" class="logout-btn">Logout</button>
         </div>
     </header>

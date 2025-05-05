@@ -77,6 +77,11 @@ function navigateTo(route) {
     window.location.href = `/${route}`;
 }
 
+function navigateToHome() {
+    // Navigate to home page without losing authentication
+    window.location.href = '/';
+}
+
 function navigateToCalendar() {
     const token = localStorage.getItem('gym_token');
     if (!token) {
@@ -88,11 +93,13 @@ function navigateToCalendar() {
 }
 
 function logout() {
-    // Clear localStorage
+    // Clear all token storage methods
     localStorage.removeItem('gym_token');
+    localStorage.removeItem('token');
     
-    // Clear the cookie
+    // Clear cookies
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'gym_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     
     // Redirect to login
     window.location.href = "/login";
