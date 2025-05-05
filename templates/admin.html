@@ -372,147 +372,174 @@
         }
     </script>
 </head>
-<body>
-    <header>
-        <h1>Admin Dashboard</h1>
-        <div class="header-controls">
-            <a href="{{ url_for('home') }}" class="nav-btn">Home</a>
-            <button id="logoutBtn" class="logout-btn">Logout</button>
-        </div>
-    </header>
-
-    <div class="container">
-        <form id="newClassForm">
-            <label for="className">Class Name:</label>
-            <input type="text" id="className" name="className" required>
-
-            <label for="instructor">Instructor:</label>
-            <input type="text" id="instructor" name="instructor" required>
-
-            <label for="classDate">Class Date and Time:</label>
-            <input type="datetime-local" id="classDate" name="classDate" required>
-
-            <label for="classCapacity">Class Capacity:</label>
-            <input type="number" id="classCapacity" name="classCapacity" min="1" required>
-
-            <button type="submit">Add Class</button>
-        </form>
-
-        <h3>Class Sizes & Open Spots</h3>
-        <ul id="classList"> 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Class Name</th>
-                            <th>Instructor</th>
-                            <th>Capacity</th>
-                            <th>Current Bookings</th>
-                            <th>Open Spots</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </div>
-        </ul>
+<header>
+    <h1>Admin Dashboard</h1>
+    <div class="header-controls">
+        <a href="{{ url_for('home') }}" class="nav-btn">Home</a>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
-    <h2>Repair Orders</h2>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Equipment</th>
-                    <th>Issue</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Treadmill #1</td>
-                    <td>Belt needs replacement</td>
-                    <td class="repair-status">Pending</td>
-                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
-                </tr>
-                <tr>
-                    <td>Weight Bench #3</td>
-                    <td>Padding torn</td>
-                    <td class="repair-status">Pending</td>
-                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
-                </tr>
-                <tr>
-                    <td>Stationary Bike #2</td>
-                    <td>Display not working</td>
-                    <td class="repair-status">Pending</td>
-                    <td><button class="repair-action-btn">Mark as In Progress</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+</header>
 
-    <h2>Employee Management</h2>
-   
-    <h3>Employee Pay and Tenure</h3>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Weekly Pay</th>
-                    <th>Tenure</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Ava Strong</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-                <tr>
-                    <td>Taylor Flexman</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-                <tr>
-                    <td>Max Steele</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-                <tr>
-                    <td>Sierra Powers</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-<h4>Monthly Report</h4>
-<div class="table-container"></div>
+<div class="section">
+<h1>Monthly Report</h1>
+<p>Month: April 2025</p>
+<h2>Membership Overview</h2>
+<table>
+  <tr>
+    <th>Category</th>
+    <th>Count</th>
+  </tr>
+  <tr>
+    <td>New Members</td>
+    <td>45</td>
+  </tr>
+  <tr>
+    <td>Renewals</td>
+    <td>38</td>
+  </tr>
+  <tr>
+    <td>Total Active Members</td>
+    <td>212</td>
+  </tr>
+</table>
+
+<h2>Financial Summary</h2>
+
+<table>
+  <tr>
+    <th>Description</th>
+    <th>Amount (USD)</th>
+  </tr>
+  <tr>
+    <td>Membership Revenue</td>
+    <td>$7,500</td>
+  </tr>
+  <tr>
+    <td>Class Revenue</td>
+    <td>$2,100</td>
+  </tr>
+  <tr>
+    <td>Merchandise Sales</td>
+    <td>$950</td>
+  </tr>
+  <tr>
+    <td><strong>Total Revenue</strong></td>
+    <td class="total-revenue"><strong>$10,550</strong></td>
+  </tr>
+</table>
+</div>
+
+<!---
+<div class="container">
+    <form id="newClassForm">
+        <label for="className">Class Name:</label>
+        <input type="text" id="className" name="className" required>
+
+        <label for="instructor">Instructor:</label>
+        <input type="text" id="instructor" name="instructor" required>
+
+        <label for="classDate">Class Date and Time:</label>
+        <input type="datetime-local" id="classDate" name="classDate" required>
+
+        <label for="classCapacity">Class Capacity:</label>
+        <input type="number" id="classCapacity" name="classCapacity" min="1" required>
+
+        <button type="submit">Add Class</button>
+    </form>
+-->
+  
+<h2>Repair Orders</h2>
+<div class="table-container">
     <table>
         <thead>
             <tr>
-                <th>Rent</th>
-                <th>Payroll</th>
-                <th>Income</th>
-                <th>Earnings</th>
+                <th>Equipment</th>
+                <th>Issue</th>
+                <th>Status</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>$2,000</td>
-                <td>$2,000</td>
-                <td>$6,000</td>
-                <td>$2,000</td>
+                <td>Treadmill #1</td>
+                <td>Belt needs replacement</td>
+                <td class="repair-status">Pending</td>
+                <td><button class="repair-action-btn">Mark as In Progress</button></td>
+            </tr>
+            <tr>
+                <td>Weight Bench #3</td>
+                <td>Padding torn</td>
+                <td class="repair-status">Pending</td>
+                <td><button class="repair-action-btn">Mark as In Progress</button></td>
+            </tr>
+            <tr>
+                <td>Stationary Bike #2</td>
+                <td>Display not working</td>
+                <td class="repair-status">Pending</td>
+                <td><button class="repair-action-btn">Mark as In Progress</button></td>
             </tr>
         </tbody>
     </table>
 </div>
-    
+
+<h2>Employee Management</h2>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Weekly Pay</th>
+                <th>Tenure</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ava Strong</td>
+                <td>Personal Trainer</td>
+                <td>$500</td>
+                <td>6 months</td>
+            </tr>
+            <tr>
+                <td>Taylor Flexman</td>
+                <td>Personal Trainer</td>
+                <td>$500</td>
+                <td>6 months</td>
+            </tr>
+            <tr>
+                <td>Max Steele</td>
+                <td>Personal Trainer</td>
+                <td>$500</td>
+                <td>6 months</td>
+            </tr>
+            <tr>
+                <td>Sierra Powers</td>
+                <td>Personal Trainer</td>
+                <td>$500</td>
+                <td>6 months</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<h3>Class Sizes & Open Spots</h3>
+<ul id="classList"> 
+    <div class="table-container classes">
+        <table>
+            <thead>
+                <tr>
+                    <th>Class Name</th>
+                    <th>Instructor</th>
+                    <th>Capacity</th>
+                    <th>Current Bookings</th>
+                    <th>Open Spots</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</ul>
+</div>
+
 </body>
 </html>
