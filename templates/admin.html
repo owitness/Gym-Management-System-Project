@@ -15,49 +15,48 @@
 
 <div class="section">
 <h1>Monthly Report</h1>
-<p>Month: April 2025</p>
+<p id="currentMonth">Month: Loading...</p>
 <h2>Membership Overview</h2>
-<table>
+<table id="membershipTable">
   <tr>
     <th>Category</th>
     <th>Count</th>
   </tr>
   <tr>
     <td>New Members</td>
-    <td>45</td>
+    <td id="newMembers">Loading...</td>
   </tr>
   <tr>
     <td>Renewals</td>
-    <td>38</td>
+    <td id="renewals">Loading...</td>
   </tr>
   <tr>
     <td>Total Active Members</td>
-    <td>212</td>
+    <td id="totalMembers">Loading...</td>
   </tr>
 </table>
 
 <h2>Financial Summary</h2>
-
-<table>
+<table id="financialTable">
   <tr>
     <th>Description</th>
     <th>Amount (USD)</th>
   </tr>
   <tr>
     <td>Membership Revenue</td>
-    <td>$7,500</td>
+    <td id="membershipRevenue">Loading...</td>
   </tr>
   <tr>
     <td>Class Revenue</td>
-    <td>$2,100</td>
+    <td id="classRevenue">Loading...</td>
   </tr>
   <tr>
     <td>Merchandise Sales</td>
-    <td>$950</td>
+    <td id="merchandiseSales">Loading...</td>
   </tr>
   <tr>
     <td><strong>Total Revenue</strong></td>
-    <td class="total-revenue"><strong>$10,550</strong></td>
+    <td class="total-revenue" id="totalRevenue"><strong>Loading...</strong></td>
   </tr>
 </table>
 </div>
@@ -88,6 +87,7 @@
                         <tr>
                             <th>Class Name</th>
                             <th>Instructor</th>
+                            <th>Date & Time</th>
                             <th>Capacity</th>
                             <th>Current Bookings</th>
                             <th>Open Spots</th>
@@ -96,6 +96,11 @@
                     <tbody>
                     </tbody>
                 </table>
+                <div class="pagination">
+                    <button id="prevPage" class="pagination-btn">Previous</button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button id="nextPage" class="pagination-btn">Next</button>
+                </div>
             </div>
         </ul>
     </div>
@@ -121,42 +126,60 @@
 
 
     <h2>Employee Management</h2>
-    <h3>Employee Pay and Tenure</h3>
+    <div class="employee-controls">
+        <select id="roleSelect">
+            <option value="">Select New Role</option>
+            <option value="admin">Admin</option>
+            <option value="trainer">Trainer</option>
+            <option value="member">Member</option>
+            <option value="non_member">Non-Member</option>
+        </select>
+        <button id="updateRoleBtn" class="btn-secondary" onclick="updateEmployeeRole()">Update Role</button>
+        <button id="deleteEmployeeBtn" class="btn-danger" onclick="deleteEmployee()">Delete Employee</button>
+    </div>
     <div class="table-container">
-        <table>
+        <table id="employeeTable">
             <thead>
                 <tr>
+                    <th>Select</th>
                     <th>Name</th>
-                    <th>Role</th>
-                    <th>Weekly Pay</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
                     <th>Tenure</th>
                 </tr>
             </thead>
             <tbody>
+                <!-- Rows will be added dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <h2>User Management</h2>
+    <div class="user-controls">
+        <select id="userRoleSelect">
+            <option value="">Select New Role</option>
+            <option value="admin">Admin</option>
+            <option value="trainer">Trainer</option>
+            <option value="member">Member</option>
+            <option value="non_member">Non-Member</option>
+        </select>
+        <button id="updateUserRoleBtn" class="btn-secondary" onclick="updateUserRole()">Update Role</button>
+        <button id="deleteUserBtn" class="btn-danger" onclick="deleteUser()">Delete User</button>
+    </div>
+    <div class="table-container">
+        <table id="userTable">
+            <thead>
                 <tr>
-                    <td>Ava Strong</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
+                    <th>Select</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                    <th>Membership Expiry</th>
+                    <th>Auto Payment</th>
                 </tr>
-                <tr>
-                    <td>Taylor Flexman</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-                <tr>
-                    <td>Max Steele</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
-                <tr>
-                    <td>Sierra Powers</td>
-                    <td>Personal Trainer</td>
-                    <td>$500</td>
-                    <td>6 months</td>
-                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added dynamically -->
             </tbody>
         </table>
     </div>

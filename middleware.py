@@ -110,19 +110,16 @@ def verify_token(token):
         raise AuthenticationError(f"Token verification failed: {str(e)}")
 
 def get_user_data(user_id):
-    try:
-        print(f"DEBUG: Looking up user_id {user_id} in database...")
-        with get_db() as conn:
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT id, email, role, membership_expiry, auto_payment FROM users WHERE id = %s", (user_id,))
-            result = cursor.fetchone()
-            print("DEBUG: User fetched =>", result)
-            if not result:
-                raise AuthenticationError("User not found")
-            return result
-    except Exception as e:
-        logger.error(f"Unexpected error in get_user_data: {str(e)}")
-        raise AuthenticationError("Failed to retrieve user data")
+    with get_db() as conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, email, role, membership_expiry, auto_payment
+            FROM users
+            WHERE id = %s
+        """, (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
 
 
 # [Previous functions: create_token, create_refresh_token, verify_token, get_user_data unchanged]

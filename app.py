@@ -20,9 +20,7 @@ from logging.handlers import RotatingFileHandler
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
-from generate_weekly_classes import generate_weekly_classes  # import your function
 from routes.attendance import attendance_bp
 from routes.equipment import equipment_bp
 
@@ -68,9 +66,9 @@ file_handler = RotatingFileHandler('logs/gym_management.log', maxBytes=10240, ba
 file_handler.setFormatter(logging.Formatter(
     '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 ))
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.WARNING)
 app.logger.addHandler(file_handler)
-app.logger.setLevel(logging.INFO)
+app.logger.setLevel(logging.WARNING)
 app.logger.info('Gym Management System startup')
 
 # Initialize rate limiter
@@ -428,25 +426,6 @@ def too_many_requests_error(error):
 def internal_error(error):
     app.logger.error(f"Internal server error: {str(error)}")
     return jsonify({"error": "Internal server error"}), 500
-
-def start_scheduler():
-    scheduler = BackgroundScheduler()
-    
-    # Schedule it to run every Sunday at 12:00 AM
-    scheduler.add_job(
-        func=generate_weekly_classes,
-        trigger="cron",
-        day_of_week="sun",
-        hour=0,
-        minute=0,
-        id="weekly_class_generator",
-        replace_existing=True
-    )
-    scheduler.start()
-    print("Scheduler started: weekly class generator active.")
-
-# Start it
-start_scheduler()
 
 def get_token_from_request():
     """Extract token from request in order of: cookies, URL query param, Authorization header"""

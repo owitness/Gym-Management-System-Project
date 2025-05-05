@@ -134,14 +134,11 @@ def get_users(user):
     with get_db() as conn:
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT u.id, u.name, u.email, u.role, u.created_at,
-                   m.status as membership_status,
-                   m.expiry_date as membership_expiry
-            FROM users u
-            LEFT JOIN memberships m ON u.id = m.member_id AND m.status = 'active'
-            ORDER BY u.created_at DESC
+            SELECT id, name, email, role, membership_expiry, auto_payment
+            FROM users
+            WHERE role IN ('member', 'non_member')
+            ORDER BY name
         """)
-        
         users = cursor.fetchall()
         cursor.close()
         return jsonify(users)
@@ -152,22 +149,58 @@ def get_users(user):
 @admin_required
 def update_user_role(user, user_id):
     data = request.json
-    new_role = data.get("role")
-    
-    if new_role not in ["admin", "trainer", "member", "non_member"]:
-        return jsonify({"error": "Invalid role"}), 400
+    if not data or 'role' not in data:
+        return jsonify({"error": "Role is required"}), 400
+        
+    new_role = data['role']
+    if new_role not in ['admin', 'trainer', 'member', 'non_member']:
+        return jsonify({"error": f"Invalid role: {new_role}. Must be one of: admin, trainer, member, non_member"}), 400
         
     with get_db() as conn:
         cursor = conn.cursor()
+        # First check if user exists and get current role in one query
         cursor.execute("""
-            UPDATE users 
-            SET role = %s 
-            WHERE id = %s
+            SELECT role FROM users WHERE id = %s
+        """, (user_id,))
+        
+        existing_user = cursor.fetchone()
+        if not existing_user:
+            cursor.close()
+            return jsonify({"error": f"User with ID {user_id} not found"}), 404
+            
+        current_role = existing_user[0]
+            
+        # Update the role directly without additional verification
+        cursor.execute("""
+            UPDATE users SET role = %s WHERE id = %s
         """, (new_role, user_id))
         
         conn.commit()
         cursor.close()
-        return jsonify({"message": f"User role updated to {new_role}"})
+        return jsonify({"message": f"Role updated successfully to {new_role}", "old_role": current_role, "new_role": new_role})
+
+# 🔹 Delete user
+@admin_bp.route("/admin/users/<int:user_id>", methods=["DELETE"])
+@authenticate
+@admin_required
+def delete_user(user, user_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Check if user exists
+        cursor.execute("SELECT id FROM users WHERE id = %s AND role IN ('member', 'non_member')", (user_id,))
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            cursor.close()
+            return jsonify({"error": f"User with ID {user_id} not found or cannot be deleted"}), 404
+            
+        # Delete the user
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+        cursor.close()
+        
+        return jsonify({"message": "User deleted successfully"})
 
 # 🔹 Get attendance report
 @admin_bp.route("/admin/attendance", methods=["GET"])
@@ -251,4 +284,148 @@ def get_equipment_reports(user):
         """)
         reports = cursor.fetchall()
         return jsonify(reports)
+
+# Get membership statistics
+@admin_bp.route("/admin/membership-stats", methods=["GET"])
+@authenticate
+@admin_required
+def get_membership_stats(user):
+    with get_db() as conn:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get current month's stats
+        current_month = datetime.now().strftime('%Y-%m')
+        
+        # New members this month
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM users
+            WHERE role = 'member'
+            AND DATE_FORMAT(created_at, '%Y-%m') = %s
+        """, (current_month,))
+        new_members = cursor.fetchone()['count']
+        
+        # Total active members (members with valid membership_expiry)
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM users
+            WHERE role = 'member'
+            AND membership_expiry > NOW()
+        """)
+        total_members = cursor.fetchone()['count']
+        
+        # Financial stats from payments table
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'Completed' THEN amount ELSE 0 END), 0) as membership_revenue,
+                5000 as class_revenue,  -- Hardcoded value
+                2000 as merchandise_sales  -- Hardcoded value
+            FROM payments
+            WHERE DATE_FORMAT(transaction_date, '%Y-%m') = %s
+        """, (current_month,))
+        financial = cursor.fetchone()
+        
+        stats = {
+            'new_members': new_members,
+            'renewals': 0,  # Since we don't track renewals separately
+            'total_members': total_members,
+            'membership_revenue': financial['membership_revenue'],
+            'class_revenue': financial['class_revenue'],
+            'merchandise_sales': financial['merchandise_sales'],
+            'total_revenue': (financial['membership_revenue'] + 
+                            financial['class_revenue'] + 
+                            financial['merchandise_sales'])
+        }
+        
+        cursor.close()
+        return jsonify(stats)
+
+# Get all employees
+@admin_bp.route("/admin/employees", methods=["GET"])
+@authenticate
+@admin_required
+def get_employees(user):
+    with get_db() as conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, name, email, role,
+                   TIMESTAMPDIFF(MONTH, created_at, NOW()) as tenure_months
+            FROM users
+            WHERE role NOT IN ('member', 'non_member')
+            ORDER BY name
+        """)
+        employees = cursor.fetchall()
+        
+        # Format tenure
+        for emp in employees:
+            months = emp['tenure_months']
+            if months < 12:
+                emp['tenure'] = f"{months} months"
+            else:
+                years = months // 12
+                remaining_months = months % 12
+                emp['tenure'] = f"{years} years, {remaining_months} months"
+            del emp['tenure_months']
+        
+        cursor.close()
+        return jsonify(employees)
+
+# Update employee role
+@admin_bp.route("/admin/employees/<int:employee_id>/role", methods=["PUT"])
+@authenticate
+@admin_required
+def update_employee_role(user, employee_id):
+    data = request.json
+    if not data or 'role' not in data:
+        return jsonify({"error": "Role is required"}), 400
+        
+    new_role = data['role']
+    if new_role not in ['admin', 'trainer', 'member', 'non_member']:
+        return jsonify({"error": f"Invalid role: {new_role}. Must be one of: admin, trainer, member, non_member"}), 400
+        
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # First check if employee exists and get current role in one query
+        cursor.execute("""
+            SELECT role FROM users WHERE id = %s
+        """, (employee_id,))
+        
+        existing_user = cursor.fetchone()
+        if not existing_user:
+            cursor.close()
+            return jsonify({"error": f"Employee with ID {employee_id} not found"}), 404
+            
+        current_role = existing_user[0]
+            
+        # Update the role directly without additional verification
+        cursor.execute("""
+            UPDATE users SET role = %s WHERE id = %s
+        """, (new_role, employee_id))
+        
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": f"Role updated successfully to {new_role}", "old_role": current_role, "new_role": new_role})
+
+# Delete employee
+@admin_bp.route("/admin/employees/<int:employee_id>", methods=["DELETE"])
+@authenticate
+@admin_required
+def delete_employee(user, employee_id):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Check if employee exists
+        cursor.execute("SELECT id FROM users WHERE id = %s AND role NOT IN ('member', 'non_member')", (employee_id,))
+        employee = cursor.fetchone()
+        
+        if not employee:
+            cursor.close()
+            return jsonify({"error": f"Employee with ID {employee_id} not found or cannot be deleted"}), 404
+        
+        # Delete the employee
+        cursor.execute("DELETE FROM users WHERE id = %s", (employee_id,))
+        conn.commit()
+        cursor.close()
+        return jsonify({"message": "Employee deleted successfully"})
 
