@@ -236,3 +236,19 @@ def get_payment_report(user):
             "daily_revenue": daily_revenue,
             "membership_stats": membership_stats
         }) 
+        
+@admin_bp.route("/admin/equipment-reports", methods=["GET"])
+@authenticate
+@admin_required
+def get_equipment_reports(user):
+    with get_db() as conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT er.id, er.equipment_name, er.issue_description, er.reported_at, u.name AS reporter_name
+            FROM equipment_reports er
+            JOIN users u ON er.user_id = u.id
+            ORDER BY er.reported_at DESC
+        """)
+        reports = cursor.fetchall()
+        return jsonify(reports)
+

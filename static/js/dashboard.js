@@ -2,59 +2,31 @@
 // Authentication Utilities
 // ==========================
 
-/**
- * Checks and ensures proper token availability for authentication
- * Returns the token if available
- */
 function ensureAuthentication() {
-    // First try to get token from URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get("token");
-    
-    // Then try localStorage
     const localToken = localStorage.getItem("gym_token");
-    
-    // If token in URL, save to localStorage and return it
+
     if (urlToken) {
         localStorage.setItem("gym_token", urlToken);
-        
-        // Also set a cookie for server-side use on page refresh
         document.cookie = `token=${urlToken}; path=/; max-age=86400; SameSite=Strict`;
-        
-        // Always remove token from URL for security
         window.history.replaceState({}, document.title, window.location.pathname);
-        
         return urlToken;
     }
-    
-    // If token in localStorage but not in URL
+
     if (localToken && !urlToken) {
-        // Set a cookie for server-side use on page refresh
         document.cookie = `token=${localToken}; path=/; max-age=86400; SameSite=Strict`;
-        
-        // No longer add token to URL to prevent security issues
         return localToken;
     }
-    
-    // No token found - redirect to login
+
     window.location.href = '/login';
     return null;
 }
 
-/**
- * Get authentication headers for API calls
- */
 function getAuthHeaders() {
     const token = localStorage.getItem('gym_token');
-    
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
 }
 
@@ -69,16 +41,11 @@ function navigateTo(route) {
         return;
     }
 
-    if (route === 'dashboard' && window.location.pathname === '/dashboard') {
-        return;
-    }
-
-    // Navigate without exposing token in URL
+    if (route === 'dashboard' && window.location.pathname === '/dashboard') return;
     window.location.href = `/${route}`;
 }
 
 function navigateToHome() {
-    // Navigate to home page without losing authentication
     window.location.href = '/';
 }
 
@@ -93,7 +60,6 @@ function navigateToCalendar() {
 }
 
 function logout() {
-    // Clear all token storage methods
     localStorage.removeItem('gym_token');
     localStorage.removeItem('token');
     localStorage.removeItem('gym_refresh_token');
@@ -102,8 +68,6 @@ function logout() {
     // Clear cookies
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'gym_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    
-    // Redirect to login
     window.location.href = "/login";
 }
 
@@ -128,7 +92,6 @@ async function loadDashboardData() {
         
         const membership = data.membership;
 
-        // Update Personal Info
         document.getElementById('username').textContent = membership?.member_name || "Member";
         document.getElementById('fullname').textContent = membership?.member_name || "Member";
         document.getElementById('email').textContent = membership?.email || "N/A";
@@ -143,9 +106,7 @@ async function loadDashboardData() {
             </div>
         `;
 
-        // Add Cancel Membership Button
         const cancelBtn = document.createElement('button');
-        cancelBtn.class = 'btn-primary';
         cancelBtn.className = 'btn-danger';
         cancelBtn.textContent = 'Cancel Membership';
         cancelBtn.addEventListener('click', cancelMembership);
@@ -200,7 +161,6 @@ async function loadProfileData() {
         });
         if (!response.ok) throw new Error('Failed to load profile data');
         const data = await response.json();
-        // Profile info is now mainly handled by loadDashboardData()
     } catch (error) {
         console.error('Error loading profile:', error);
     }
@@ -213,7 +173,6 @@ async function loadMembershipData() {
         });
         if (!response.ok) throw new Error('Failed to load membership data');
         const data = await response.json();
-        // Membership info is mainly handled by loadDashboardData()
     } catch (error) {
         console.error('Error loading membership:', error);
     }
@@ -226,7 +185,6 @@ async function loadClassesData() {
         });
         if (!response.ok) throw new Error('Failed to load classes data');
         const data = await response.json();
-        // Class booking is handled separately
     } catch (error) {
         console.error('Error loading classes:', error);
     }
@@ -472,10 +430,48 @@ function addCancelClassStyles() {
 // ==========================
 
 document.addEventListener('DOMContentLoaded', () => {
+    const equipmentForm = document.getElementById('equipmentForm');
+    if (equipmentForm) {
+        equipmentForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const equipmentName = document.getElementById('equipment_name').value.trim();
+            const issueDescription = document.getElementById('issue_description').value.trim();
+
+            if (!equipmentName || !issueDescription) {
+                alert('Please fill out both fields before submitting.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/equipment/report', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        equipment_name: equipmentName,
+                        issue_description: issueDescription
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('reportMessage').textContent = 'Report submitted!';
+                    document.getElementById('reportMessage').style.display = 'block';
+                    equipmentForm.reset();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to report issue');
+                }
+            } catch (error) {
+                console.error('Error reporting equipment issue:', error);
+                alert('An error occurred while submitting the report.');
+            }
+        });
+    }
+
     // Ensure user is authenticated before loading dashboard data
     const token = ensureAuthentication();
-    if (!token) return; // If no token, we've already redirected to login
-    
+    if (!token) return;
+
     // Load dashboard data
     loadDashboardData();
     loadProfileData();

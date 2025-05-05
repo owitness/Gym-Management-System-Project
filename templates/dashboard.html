@@ -69,6 +69,22 @@
                 </div>
                 <button onclick="navigateToCalendar()" class="btn-primary">Book New Class</button>
             </div>
+            
+            <div class="dashboard-card">
+                <h2>Report Broken Equipment</h2>
+                <form id="equipmentForm" style="display: flex; flex-direction: column; gap: 10px;">
+                    <label for="equipment_name">Equipment:</label>
+                    <input type="text" id="equipment_name" required style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                
+                    <label for="issue_description">Issue:</label>
+                    <textarea id="issue_description" rows="3" required style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; resize: vertical;"></textarea>
+                
+                    <button type="submit" class="btn-danger" style="align-self: flex-start; padding: 8px 12px;">Submit Report</button>
+                </form>
+                <div id="reportMessage" style="display:none; color: green;"></div>
+                
+            </div>
+            
         </div>
     </div>
 

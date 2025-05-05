@@ -1,110 +1,117 @@
-.admin span{
+.admin span {
     text-shadow: none;
 }
-    .admin title{
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-    }
-    .admin body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-    }
-     .admin header h1 {
-        background-color: #333;
-        color: #fff;
-        font-size: xx-large;
-        font-family: 'Times New Roman', Times, serif;
-        color: white;
-        padding: 10px 20px;
-        text-align: center;
-    }
-   .admin h2 {
+
+.admin title {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.admin body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.admin header h1 {
+    background-color: #333;
+    color: #fff;
+    font-size: xx-large;
+    font-family: 'Times New Roman', Times, serif;
+    padding: 10px 20px;
+    text-align: center;
+}
+
+.admin h2 {
     font-size: 14pt;
     text-align: left;
     font-family: Arial, sans-serif;
     color: black;
+    margin: 0;
+}
 
-        margin: 0;
-    }
-    .admin .container {
-        font-family: 'Times New Roman', Times, serif;
-        font-size: 12;
-        padding: 20px;
-        text-shadow: none;
-    }
-    .admin .table-container {
-        margin: 20px 0;
-    }
-    .admin table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 10px 0;
-        background-color: #fff;
-    }
-    .admin th, td {
-        padding: 10px;
-        text-align: left;
-        border: 1px solid #ddd;
-    }
-    .admin th {
-        background-color: #333;
-        color: white;
-    }
-    .admin .status {
-        font-size: 14pt;
-        text-shadow: none;
-        font-weight: bold;
-    }
-    .membership-status {
-        color: inherit; 
-    }
-    .repair-status {
-        color: inherit; 
-    }
-    
-    
-    .admin .repair-status.open {
-         color: orange;
-    }
+.admin .container {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12;
+    padding: 20px;
+    text-shadow: none;
+}
 
-    .admin .repair-status.complete {
-       color: green;
-    }
+.admin .table-container {
+    margin: 20px 0;
+}
 
-    .admin .repair-status.closed {
-        color: red;
-     }
-     .admin .repair-status.archive {
-        color: purple;
-     }
+.admin table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    background-color: #fff;
+}
 
-     .admin .membership-status.active {
-        color: green;
-     }
+.admin th, td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
 
-     .admin .membership-status.expired {
-         color: red;
-      }
+.admin th {
+    background-color: #333;
+    color: white;
+}
 
-      .admin .employee-status.active {
-        color: green;
-     }
+.admin .status {
+    font-size: 14pt;
+    text-shadow: none;
+    font-weight: bold;
+}
 
-     .admin .employee-status.expired {
-         color: red;
-      }
+.membership-status,
+.repair-status {
+    color: inherit;
+}
 
-      .admin .repair-action-btn {
-        background-color: #4CAF50;
-        color: white;
-        padding: 5px 10px;
-        text-decoration: none;
-        border-radius: 5px;
-    }
+.admin .repair-status.open {
+    color: orange;
+}
+
+.admin .repair-status.complete {
+    color: green;
+}
+
+.admin .repair-status.closed {
+    color: red;
+}
+
+.admin .repair-status.archive {
+    color: purple;
+}
+
+.admin .membership-status.active {
+    color: green;
+}
+
+.admin .membership-status.expired {
+    color: red;
+}
+
+.admin .employee-status.active {
+    color: green;
+}
+
+.admin .employee-status.expired {
+    color: red;
+}
+
+.admin .repair-action-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    text-decoration: none;
+    border-radius: 5px;
+}
     .admin .section {
         background: white;
         padding: 20px;
@@ -116,3 +123,47 @@
     .admin .total-revenue{
         color: green
     }
+
+/* 🔹 Styles moved from inline <style> tag */
+.header-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.nav-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    text-decoration: none;
+}
+
+.nav-btn:hover {
+    background-color: #0056b3;
+}
+
+.logout-btn {
+    background-color: #ff3b30;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: #d9342b;
+}
+
+header {
+    position: relative;
+}

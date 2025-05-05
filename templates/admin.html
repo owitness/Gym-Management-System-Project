@@ -3,374 +3,7 @@
 <head>
     <link href="{{ url_for('static', filename='css/admin.css') }}" type="text/css" rel="stylesheet">
     <link href="{{ url_for('home') }}" rel="home">
-    <style>
-        /* Styles for the header navigation */
-        .header-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .nav-btn {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-            text-decoration: none;
-        }
-        
-        .nav-btn:hover {
-            background-color: #0056b3;
-        }
-        
-        .logout-btn {
-            background-color: #ff3b30;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        
-        .logout-btn:hover {
-            background-color: #d9342b;
-        }
-        
-        /* Make header relative for absolute positioning of buttons */
-        header {
-            position: relative;
-        }
-    </style>
-    <script>
-        // Ensure token is properly set in cookies
-        (function saveTokenToCookie() {
-            // Try URL first (priority)
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlToken = urlParams.get("token");
-            
-            if (urlToken) {
-                // Save to localStorage and cookie
-                localStorage.setItem("gym_token", urlToken);
-                document.cookie = `token=${urlToken}; path=/; max-age=86400; SameSite=Strict`;
-                
-                // Always remove token from URL for security
-                window.history.replaceState({}, document.title, window.location.pathname);
-                return;
-            }
-            
-            // If not in URL, try to get from localStorage
-            const localToken = localStorage.getItem("gym_token") || localStorage.getItem("token");
-            if (localToken) {
-                // Save to cookie
-                document.cookie = `token=${localToken}; path=/; max-age=86400; SameSite=Strict`;
-            }
-        })();
-
-        document.addEventListener("DOMContentLoaded", function() {
-            let statusElements = document.querySelectorAll(".repair-status");
-            statusElements.forEach(function(status) {
-                status.classList.remove("open", "closed");
-                status.classList.add("closed");
-                status.textContent = "Pending";
-            });
-
-            let actionButtons = document.querySelectorAll(".repair-action-btn");
-            actionButtons.forEach(function(button) {
-                button.addEventListener("click", function(event) {
-                    event.preventDefault();
-                    let row = event.target.closest('tr');
-                    let statusCell = row.querySelector(".repair-status");
-
-                    if (statusCell.classList.contains("closed") || statusCell.textContent === "Pending") {
-                        statusCell.classList.remove("closed");
-                        statusCell.classList.add("open");
-                        statusCell.textContent = "In Progress";
-                        event.target.textContent = "Mark as Complete";
-                    } else if (statusCell.classList.contains("open") && statusCell.textContent === "In Progress") {
-                        statusCell.classList.remove("open");
-                        statusCell.classList.add("complete");
-                        statusCell.textContent = "Completed";
-                        event.target.textContent = "Archive";
-                    } else if (statusCell.classList.contains("complete") && statusCell.textContent === "Completed") {
-                        statusCell.classList.remove("complete");
-                        statusCell.classList.add("archive");
-                        statusCell.textContent = "Archived";
-                        event.target.textContent = "Archived"; 
-                        event.target.disabled = true; 
-                    }
-                });
-            });
-        });
-
-        let classes = [];
-
-        async function fetchClasses() {
-            try {
-                console.log('Fetching classes from API...');
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.error('No authentication token found');
-                    return [];
-                }
-
-                const response = await fetch('/api/classes', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                console.log('API Response:', response);
-                if (!response.ok) throw new Error('Failed to fetch classes');
-                const data = await response.json();
-                console.log('Fetched classes:', data);
-                return data;
-            } catch (error) {
-                console.error('Error fetching classes:', error);
-                return [];
-            }
-        }
-
-        async function loadClasses() {
-            console.log('Loading classes into table...');
-            try {
-                const classes = await fetchClasses();
-                console.log('Classes to display:', classes);
-                const tbody = document.querySelector("#classList table tbody");
-                console.log('Table body element:', tbody);
-                
-                if (classes && classes.length > 0) {
-                    tbody.innerHTML = ''; // Clear existing rows
-                    
-                    classes.forEach(cls => {
-                        console.log('Adding class to table:', cls);
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${cls.class_name}</td>
-                            <td>${cls.trainer_name}</td>
-                            <td>${cls.capacity}</td>
-                            <td>${cls.current_bookings}</td>
-                            <td>${cls.capacity - cls.current_bookings}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } else {
-                    console.log('No classes returned from API');
-                }
-            } catch (error) {
-                console.error('Error loading classes:', error);
-            }
-        }
-
-        async function fetchTrainers() {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    console.error('No authentication token found');
-                    return [];
-                }
-
-                const response = await fetch('/api/admin/trainers', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) throw new Error('Failed to fetch trainers');
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching trainers:', error);
-                return [];
-            }
-        }
-
-        async function populateTrainerDropdown() {
-            const trainers = await fetchTrainers();
-            const instructorSelect = document.getElementById('instructor');
-            instructorSelect.innerHTML = '<option value="">Select a trainer</option>';
-            
-            trainers.forEach(trainer => {
-                const option = document.createElement('option');
-                option.value = trainer.id;
-                option.textContent = trainer.name;
-                instructorSelect.appendChild(option);
-            });
-        }
-
-        // Get token from URL parameters and store in localStorage
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            if (token) {
-                localStorage.setItem('token', token);
-                console.log('Token stored in localStorage');
-            } else {
-                console.error('No token found in URL parameters');
-            }
-            
-            // Load classes and trainers
-            loadClasses();
-            populateTrainerDropdown();
-            
-            // Add event listener for logout button
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                logoutUser();
-            });
-        });
-
-        document.getElementById("newClassForm").addEventListener("submit", async function (event) {
-            event.preventDefault();
-
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert('Please log in first');
-                return;
-            }
-
-            const className = document.getElementById("className").value;
-            const instructor = document.getElementById("instructor").value;
-            const classDate = document.getElementById("classDate").value;
-            const classCapacity = document.getElementById("classCapacity").value;
-
-            try {
-                const response = await fetch('/api/admin/classes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        class_name: className,
-                        trainer_name: instructor,
-                        schedule_time: classDate,
-                        capacity: classCapacity
-                    })
-                });
-
-                if (!response.ok) throw new Error('Failed to create class');
-
-                // Add the new class to the table
-                const tbody = document.querySelector("#classList table tbody");
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${className}</td>
-                    <td>${instructor}</td>
-                    <td>${classCapacity}</td>
-                    <td>0</td>
-                    <td>${classCapacity}</td>
-                `;
-                tbody.appendChild(tr);
-
-                // Show confirmation message
-                const confirmationMessage = document.getElementById('confirmationMessage');
-                confirmationMessage.style.display = 'block';
-
-                // Hide the confirmation message after a few seconds
-                setTimeout(function() {
-                    confirmationMessage.style.display = 'none';
-                }, 3000);
-
-                // Clear the form
-                document.getElementById("newClassForm").reset();
-            } catch (error) {
-                console.error('Error creating class:', error);
-                alert('Failed to create class. Please try again.');
-            }
-        });
-
-        //Employee script
-        let employees = [];
-
-        // Function to add new employee to the list
-        function addEmployeeToList(employeeData) {
-            const employeeList = document.getElementById("employeeList");
-            const li = document.createElement("li");
-            li.textContent = `${employeeData.employeeName}, Role: ${employeeData.employeeRole}, Start Date: ${employeeData.startDate}, Status: ${employeeData.status}`;
-            employeeList.appendChild(li);
-        }
-
-        // Function to handle form submission for new employee
-        document.getElementById("newEmployeeForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-
-            // Get form data
-            const employeeName = document.getElementById("employeeName").value;
-            const employeeRole = document.getElementById("employeeRole").value;
-            const startDate = document.getElementById("startDate").value;
-            const status = document.getElementById("status").value;
-
-            // Create a new employee object
-            const newEmployee = {
-                employeeName: employeeName,
-                employeeRole: employeeRole,
-                startDate: startDate,
-                status: status
-            };
-
-            // Add the new employee to the employees array
-            employees.push(newEmployee);
-
-            // Add the new employee to the display list
-            addEmployeeToList(newEmployee);
-
-            // Clear the form fields
-            document.getElementById("newEmployeeForm").reset();
-        });
-
-        function classconfirmationMessage() {
-            alert("Class has been successfully added!");
-        }
-
-        function employeeConfirmationMessage() {
-            alert("An Employee has been successfully added!");
-        }
-
-        // Function to handle user logout
-        async function logoutUser() {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.href = '/login';
-                    return;
-                }
-                
-                // Call logout API
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                // Clear local storage
-                localStorage.removeItem('token');
-                localStorage.removeItem('gym_token');
-                localStorage.removeItem('gym_refresh_token');
-                localStorage.removeItem('gym_user');
-                
-                // Clear cookies
-                document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                
-                // Redirect to login page
-                window.location.href = '/login';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                
-                // Even if the API call fails, clear local storage and redirect
-                localStorage.removeItem('token');
-                localStorage.removeItem('gym_token');
-                localStorage.removeItem('gym_refresh_token');
-                localStorage.removeItem('gym_user');
-                window.location.href = '/login';
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
 </head>
 <header>
     <h1>Admin Dashboard</h1>
@@ -429,7 +62,7 @@
 </table>
 </div>
 
-<!---
+
 <div class="container">
     <form id="newClassForm">
         <label for="className">Class Name:</label>
@@ -444,102 +77,110 @@
         <label for="classCapacity">Class Capacity:</label>
         <input type="number" id="classCapacity" name="classCapacity" min="1" required>
 
-        <button type="submit">Add Class</button>
-    </form>
--->
-  
-<h2>Repair Orders</h2>
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Equipment</th>
-                <th>Issue</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Treadmill #1</td>
-                <td>Belt needs replacement</td>
-                <td class="repair-status">Pending</td>
-                <td><button class="repair-action-btn">Mark as In Progress</button></td>
-            </tr>
-            <tr>
-                <td>Weight Bench #3</td>
-                <td>Padding torn</td>
-                <td class="repair-status">Pending</td>
-                <td><button class="repair-action-btn">Mark as In Progress</button></td>
-            </tr>
-            <tr>
-                <td>Stationary Bike #2</td>
-                <td>Display not working</td>
-                <td class="repair-status">Pending</td>
-                <td><button class="repair-action-btn">Mark as In Progress</button></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+            <button type="submit">Add Class</button>
+        </form>
 
-<h2>Employee Management</h2>
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Weekly Pay</th>
-                <th>Tenure</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Ava Strong</td>
-                <td>Personal Trainer</td>
-                <td>$500</td>
-                <td>6 months</td>
-            </tr>
-            <tr>
-                <td>Taylor Flexman</td>
-                <td>Personal Trainer</td>
-                <td>$500</td>
-                <td>6 months</td>
-            </tr>
-            <tr>
-                <td>Max Steele</td>
-                <td>Personal Trainer</td>
-                <td>$500</td>
-                <td>6 months</td>
-            </tr>
-            <tr>
-                <td>Sierra Powers</td>
-                <td>Personal Trainer</td>
-                <td>$500</td>
-                <td>6 months</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-<h3>Class Sizes & Open Spots</h3>
-<ul id="classList"> 
-    <div class="table-container classes">
-        <table>
+        <h3>Class Sizes & Open Spots</h3>
+        <ul id="classList"> 
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Instructor</th>
+                            <th>Capacity</th>
+                            <th>Current Bookings</th>
+                            <th>Open Spots</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </ul>
+    </div>
+
+    <h2>Repair Orders</h2>
+    <div class="table-container">
+        <table id="repairReportsTable">
             <thead>
                 <tr>
-                    <th>Class Name</th>
-                    <th>Instructor</th>
-                    <th>Capacity</th>
-                    <th>Current Bookings</th>
-                    <th>Open Spots</th>
+                    <th>Equipment</th>
+                    <th>Issue</th>
+                    <th>Reported By</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
+                <!-- Rows will be added dynamically -->
             </tbody>
         </table>
     </div>
-</ul>
-</div>
 
+
+    <h2>Employee Management</h2>
+    <h3>Employee Pay and Tenure</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Weekly Pay</th>
+                    <th>Tenure</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Ava Strong</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Taylor Flexman</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Max Steele</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+                <tr>
+                    <td>Sierra Powers</td>
+                    <td>Personal Trainer</td>
+                    <td>$500</td>
+                    <td>6 months</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h4>Monthly Report</h4>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rent</th>
+                    <th>Payroll</th>
+                    <th>Income</th>
+                    <th>Earnings</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>$2,000</td>
+                    <td>$2,000</td>
+                    <td>$6,000</td>
+                    <td>$2,000</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

@@ -110,87 +110,79 @@ def verify_token(token):
         raise AuthenticationError(f"Token verification failed: {str(e)}")
 
 def get_user_data(user_id):
-    """Get user data from database"""
     try:
+        print(f"DEBUG: Looking up user_id {user_id} in database...")
         with get_db() as conn:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT id, email, role, membership_expiry, auto_payment
-                FROM users
-                WHERE id = %s
-            """, (user_id,))
-            user_data = cursor.fetchone()
-            
-            if not user_data:
-                logger.error(f"User not found with ID: {user_id}")
+            cursor.execute("SELECT id, email, role, membership_expiry, auto_payment FROM users WHERE id = %s", (user_id,))
+            result = cursor.fetchone()
+            print("DEBUG: User fetched =>", result)
+            if not result:
                 raise AuthenticationError("User not found")
-            return user_data
-    except mysql.connector.Error as e:
-        logger.error(f"MySQL error in get_user_data: {str(e)}")
-        raise AuthenticationError(f"Database error: {str(e)}")
+            return result
     except Exception as e:
         logger.error(f"Unexpected error in get_user_data: {str(e)}")
         raise AuthenticationError("Failed to retrieve user data")
+
+
+# [Previous functions: create_token, create_refresh_token, verify_token, get_user_data unchanged]
 
 def authenticate(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
-        
-        # 1. Check Authorization header
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             parts = auth_header.split(" ")
             if len(parts) == 2:
                 token = parts[1]
-        
-        # 2. If not in header, check query parameter (less secure)
         if not token:
             token = request.args.get('token')
-            
-        # 3. If still not found, check cookies (secure if using SameSite=Strict)
         if not token and 'token' in request.cookies:
             token = request.cookies.get('token')
-
         if not token:
             return jsonify({'error': 'Authentication token is missing'}), 401
-
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             user_id = data['user_id']
             user_data = get_user_data(user_id)
             if not user_data:
                 return jsonify({'error': 'Authentication failed: User not found'}), 401
-
+            # Pass user_data as a keyword argument
             kwargs['user'] = user_data
             return f(*args, **kwargs)
-
-        except jwt.ExpiredSignatureError as e:
+        except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Authentication failed: Token has expired'}), 401
         except jwt.InvalidTokenError as e:
             return jsonify({'error': f'Authentication failed: Invalid token: {str(e)}'}), 401
         except Exception as e:
             return jsonify({'error': f'Authentication failed: {str(e)}'}), 401
-
     return decorated
+
 
 def admin_required(f):
     @wraps(f)
-    def wrapper(user_data, *args, **kwargs):
+    def wrapper(*args, **kwargs):
+        user_data = kwargs.get('user')
+        if not user_data:
+            return jsonify({"error": "User data not provided"}), 401
         if user_data.get("role") != "admin":
             logger.warning(f"Unauthorized admin access attempt by user {user_data.get('email')}")
             return jsonify({"error": "Unauthorized - Admins Only"}), 403
-        return f(user_data, *args, **kwargs)
+        return f(*args, **kwargs)
     return wrapper
 
 def member_required(f):
     @wraps(f)
-    def wrapper(user_data, *args, **kwargs):
-        if user_data.get("role") not in ["member", "admin"]:
-            logger.warning(f"Unauthorized member access attempt by user {user_data.get('email')}")
+    def wrapper(user, *args, **kwargs):
+        if not user:
+            return jsonify({"error": "User data not provided"}), 401
+        if user.get("role") not in ["member", "admin"]:
+            logger.warning(f"Unauthorized member access attempt by user {user.get('email')}")
             return jsonify({"error": "Unauthorized - Members Only"}), 403
-        return f(user_data, *args, **kwargs)
+        return f(user, *args, **kwargs)
     return wrapper
+
 
 def add_security_headers(response):
     """Add security headers to all responses"""

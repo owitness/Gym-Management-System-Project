@@ -24,7 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from generate_weekly_classes import generate_weekly_classes  # import your function
 from routes.attendance import attendance_bp
-
+from routes.equipment import equipment_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -48,6 +48,8 @@ csrf.exempt(trainer_bp)
 csrf.exempt(payments_bp)
 csrf.exempt(class_schedule_bp)
 csrf.exempt(attendance_bp)
+csrf.exempt(equipment_bp)
+csrf.exempt(admin_bp)
 
 # Configure CORS with specific options
 CORS(app, resources={
@@ -83,11 +85,13 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(users_bp, url_prefix="/api")
 app.register_blueprint(memberships_bp, url_prefix="/api")
 app.register_blueprint(dashboard_bp, url_prefix="/api")
-app.register_blueprint(admin_bp, url_prefix="/api")
 app.register_blueprint(trainer_bp, url_prefix="/api")
 app.register_blueprint(payments_bp, url_prefix="/api")
 app.register_blueprint(class_schedule_bp, url_prefix="/api")
 app.register_blueprint(attendance_bp, url_prefix="/api")
+app.register_blueprint(equipment_bp, url_prefix="/api/equipment")
+app.register_blueprint(admin_bp, url_prefix="/api")
+
 
 # Add security headers to all responses
 @app.after_request
