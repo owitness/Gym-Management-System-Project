@@ -35,7 +35,7 @@ def get_dashboard_summary(user):
 
         # Get upcoming classes
         cursor.execute("""
-            SELECT c.class_name, c.schedule_time, t.name as trainer_name
+            SELECT c.id, c.class_name, c.schedule_time, t.name as trainer_name
             FROM class_bookings cb
             JOIN classes c ON cb.class_id = c.id
             JOIN users t ON c.trainer_id = t.id

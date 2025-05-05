@@ -73,32 +73,39 @@ def book_class(class_id, user=None):
         return jsonify({"error": f"Booking failed: {str(e)}"}), 500
 
 # Cancel class booking
-@class_schedule_bp.route("/classes/<int:class_id>/cancel", methods=["DELETE"])
+@class_schedule_bp.route("/classes/<int:class_id>/cancel", methods=["DELETE", "POST"])
 @authenticate
 def cancel_class_booking(user, class_id):
-    with get_db() as conn:
-        cursor = conn.cursor(dictionary=True)
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor(dictionary=True)
 
-        # Check if class hasn't started yet
-        cursor.execute("""
-            SELECT c.schedule_time
-            FROM class_bookings cb
-            JOIN classes c ON cb.class_id = c.id
-            WHERE cb.member_id = %s AND cb.class_id = %s
-        """, (user["id"], class_id))
-        
-        class_info = cursor.fetchone()
-        if not class_info:
-            return jsonify({"error": "Booking not found"}), 404
+            # Check if class hasn't started yet
+            cursor.execute("""
+                SELECT c.schedule_time
+                FROM class_bookings cb
+                JOIN classes c ON cb.class_id = c.id
+                WHERE cb.member_id = %s AND cb.class_id = %s
+            """, (user["id"], class_id))
             
-        if class_info["schedule_time"] <= datetime.now():
-            return jsonify({"error": "Cannot cancel a class that has already started"}), 400
-        
-        # Cancel the booking
-        cursor.execute("""
-            DELETE FROM class_bookings 
-            WHERE member_id = %s AND class_id = %s
-        """, (user["id"], class_id))
-        
-        conn.commit()
-        return jsonify({"message": "Class booking cancelled successfully"})
+            class_info = cursor.fetchone()
+            if not class_info:
+                return jsonify({"error": "Booking not found"}), 404
+                
+            if class_info["schedule_time"] <= datetime.now():
+                return jsonify({"error": "Cannot cancel a class that has already started"}), 400
+            
+            # Cancel the booking
+            cursor.execute("""
+                DELETE FROM class_bookings 
+                WHERE member_id = %s AND class_id = %s
+            """, (user["id"], class_id))
+            
+            if cursor.rowcount == 0:
+                return jsonify({"error": "No booking was cancelled"}), 404
+                
+            conn.commit()
+            return jsonify({"message": "Class booking cancelled successfully"})
+    except Exception as e:
+        print(f"Error cancelling class booking: {str(e)}")
+        return jsonify({"error": str(e)}), 500

@@ -790,3 +790,402 @@ button {
     font-weight: bold;
     text-shadow: none;
 }
+
+/* Trainer Dashboard Styles */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #292e70;
+    text-align: left;
+    border-bottom: 2px solid #c6e5fe;
+    padding-bottom: 0.5rem;
+}
+
+.scrollable-list {
+    overflow-y: auto;
+    max-height: 350px;
+    margin-bottom: 1rem;
+    flex: 1;
+}
+
+.class-item, .roster-item {
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    background: #f9f9ff;
+    border-radius: 8px;
+    border-left: 4px solid #292e70;
+}
+
+.class-item h3, .roster-item h4 {
+    margin: 0 0 0.5rem 0;
+    color: #292e70;
+}
+
+.class-item p, .roster-item p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.class-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.btn-primary, .btn-secondary, .btn-danger, .btn-info {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #292e70;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #c6e5fe;
+    color: #292e70;
+}
+
+.btn-danger {
+    background-color: #ff6b6b;
+    color: white;
+}
+
+.btn-info {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-primary:hover, .btn-secondary:hover, .btn-danger:hover, .btn-info:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+#class-selector {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    margin-bottom: 1rem;
+    background-color: white;
+}
+
+.calendar-view {
+    min-height: 300px;
+    background: #f9f9ff;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #292e70;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+/* Ensure navbar styling is consistent */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #292e70;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-links a {
+    color: #555;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.nav-links a:hover {
+    background-color: #f5f5f5;
+}
+
+.nav-links a.active {
+    color: #292e70;
+    background-color: #c6e5fe;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .navbar {
+        flex-direction: column;
+        padding: 1rem;
+    }
+    
+    .nav-brand {
+        margin-bottom: 1rem;
+    }
+    
+    .nav-links {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* Calendar styling for trainer dashboard */
+.calendar-header {
+    text-align: center;
+    color: #292e70;
+    margin-bottom: 1rem;
+}
+
+.calendar-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    margin-bottom: 1px;
+}
+
+.calendar-cell {
+    padding: 0.5rem;
+    text-align: center;
+    background-color: white;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.calendar-cell.weekday {
+    font-weight: bold;
+    background-color: #e6eff9;
+    color: #292e70;
+}
+
+.calendar-cell.day {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.calendar-cell.day:hover {
+    background-color: #f0f4f9;
+    transform: scale(1.05);
+}
+
+.calendar-cell.empty {
+    background-color: #f9f9f9;
+}
+
+.calendar-cell.has-classes {
+    background-color: #deebff;
+    color: #292e70;
+    font-weight: bold;
+    position: relative;
+}
+
+.calendar-cell.has-classes:after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: #292e70;
+    border-radius: 50%;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 0 0.5rem;
+}
+
+.color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.color-dot.has-classes {
+    background-color: #292e70;
+}
+
+.day-classes {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.day-class-item {
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    background: #f9f9ff;
+    border-radius: 8px;
+    border-left: 4px solid #292e70;
+}
+
+.day-class-item h4 {
+    margin: 0 0 0.5rem 0;
+    color: #292e70;
+}
+
+.day-class-item p {
+    margin: 0.25rem 0;
+    color: #555;
+}
+
+/* Enhanced Calendar Styling */
+.calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.calendar-nav-btn {
+    padding: 0.5rem 1rem;
+    background-color: #e6eff9;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.calendar-nav-btn:hover {
+    background-color: #c6e5fe;
+    transform: translateY(-2px);
+}
+
+.calendar-cell.today {
+    background-color: #fffde7;
+    border: 2px solid #ffd54f;
+}
+
+.calendar-cell.day {
+    min-height: 80px;
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0.5rem;
+}
+
+.date-number {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.color-dot.today {
+    background-color: #ffd54f;
+}
+
+.class-count {
+    margin-top: 25px;
+    font-size: 0.8rem;
+    color: #292e70;
+    background-color: rgba(198, 229, 254, 0.7);
+    padding: 2px 6px;
+    border-radius: 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modal-footer {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.day-classes {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.day-class-item {
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    background: #f9f9ff;
+    border-radius: 8px;
+    border-left: 4px solid #292e70;
+}

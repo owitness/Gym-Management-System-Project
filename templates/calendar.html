@@ -5,6 +5,70 @@
     <title>Class Calendar</title>
     <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .class-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .class-item h3 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+        
+        .class-item p {
+            margin: 5px 0;
+            color: #34495e;
+        }
+        
+        .class-item button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        
+        .class-item button:hover:not(:disabled) {
+            background: #2980b9;
+        }
+        
+        .class-item button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .modal-content {
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .success-message {
+            background: #2ecc71;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="headcontainer">
@@ -48,6 +112,8 @@
         <div class="modal-content">
             <span class="close" onclick="closeClassModal()">&times;</span>
             <h2>Classes on <span id="modal-date"></span></h2>
+            <div id="success-message" class="success-message"></div>
+            <div id="error-message" class="error-message"></div>
             <div id="modal-class-list"></div>
         </div>
     </div>

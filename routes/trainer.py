@@ -226,4 +226,32 @@ def get_schedule(user):
             schedule_by_date[date].append(class_info)
         
         cursor.close()
-        return jsonify(schedule_by_date) 
+        return jsonify(schedule_by_date)
+
+# 🔹 Get single class by ID
+@trainer_bp.route("/trainer/classes/<int:class_id>", methods=["GET"])
+@authenticate
+@trainer_required
+def get_class_by_id(user, class_id):
+    with get_db() as conn:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verify trainer owns the class
+        cursor.execute("""
+            SELECT c.*, 
+                   COUNT(cb.id) as current_bookings,
+                   c.capacity - COUNT(cb.id) as available_spots
+            FROM classes c
+            LEFT JOIN class_bookings cb ON c.id = cb.class_id
+            WHERE c.id = %s AND c.trainer_id = %s
+            GROUP BY c.id
+        """, (class_id, user["id"]))
+        
+        class_info = cursor.fetchone()
+        
+        if not class_info:
+            cursor.close()
+            return jsonify({"error": "Class not found or not authorized"}), 404
+            
+        cursor.close()
+        return jsonify(class_info) 

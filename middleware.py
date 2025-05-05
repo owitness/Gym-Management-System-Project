@@ -6,6 +6,7 @@ from db import get_db
 import time
 import logging
 from datetime import datetime, timedelta, timezone
+import mysql.connector
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +122,14 @@ def get_user_data(user_id):
             user_data = cursor.fetchone()
             
             if not user_data:
+                logger.error(f"User not found with ID: {user_id}")
                 raise AuthenticationError("User not found")
             return user_data
+    except mysql.connector.Error as e:
+        logger.error(f"MySQL error in get_user_data: {str(e)}")
+        raise AuthenticationError(f"Database error: {str(e)}")
     except Exception as e:
-        logger.error(f"Database error in get_user_data: {str(e)}")
+        logger.error(f"Unexpected error in get_user_data: {str(e)}")
         raise AuthenticationError("Failed to retrieve user data")
 
 def authenticate(f):

@@ -260,13 +260,21 @@ def get_user_profile(user_data):
         return jsonify({"error": "Failed to fetch profile"}), 500
 
 @auth_bp.route("/logout", methods=["POST"])
-def logout_user():
-    # Clear session data
-    from flask import session
-    session.clear()
-    
-    logger.info("User logged out")
-    return jsonify({"message": "Logged out successfully"}), 200
+@authenticate
+def logout_user(user):
+    try:
+        # Clear server-side session
+        from flask import session
+        session.clear()
+        
+        # In a production app, you might also:
+        # 1. Invalidate refresh tokens in the database
+        # 2. Add the token to a blacklist
+        
+        return jsonify({"message": "Successfully logged out"}), 200
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        return jsonify({"error": "Logout failed. Please try again."}), 500
 
 @auth_bp.route("/refresh-token", methods=["POST"])
 def refresh_token_endpoint():

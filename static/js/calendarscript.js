@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // For booking class from modal
-window.bookClass = async (classId) => {
+window.bookClass = async (classId, button) => {
     let token = localStorage.getItem('token');
     if (!token) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -138,9 +138,14 @@ window.bookClass = async (classId) => {
         if (token) localStorage.setItem("token", token);
     }
     if (!token) {
-        alert("Please sign in first.");
+        showError("Please sign in first.");
         return;
     }
+
+    // Disable button and show loading state
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = "Booking...";
 
     try {
         const res = await fetch(`/api/classes/${classId}/book`, {
@@ -148,40 +153,102 @@ window.bookClass = async (classId) => {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
+        const data = await res.json();
+
         if (res.ok) {
-            alert("Class booked!");
+            showSuccess("Class booked successfully!");
+            // Refresh the class list after 1.5 seconds
+            setTimeout(() => {
+                const currentDate = document.getElementById("modal-date").textContent;
+                const date = new Date(currentDate);
+                const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                fetchClasses().then(classes => {
+                    const classesForDay = classes.filter(cls => {
+                        const classDate = new Date(cls.schedule_time);
+                        const formattedDate = `${classDate.getFullYear()}-${String(classDate.getMonth() + 1).padStart(2, '0')}-${String(classDate.getDate()).padStart(2, '0')}`;
+                        return formattedDate === dateString;
+                    });
+                    showClassesForDay(dateString, classesForDay);
+                });
+            }, 1500);
         } else {
-            const err = await res.json().catch(() => null);
-            alert(err?.error || "Booking failed due to an unexpected error.");
+            showError(data.error || "Booking failed due to an unexpected error.");
+            // Reset button state
+            button.disabled = false;
+            button.textContent = originalText;
         }
-    } catch {
-        alert("Booking failed. Please check your connection or try again later.");
+    } catch (error) {
+        showError("Booking failed. Please check your connection or try again later.");
+        // Reset button state
+        button.disabled = false;
+        button.textContent = originalText;
     }
 };
 
+function showSuccess(message) {
+    const successDiv = document.getElementById("success-message");
+    const errorDiv = document.getElementById("error-message");
+    successDiv.textContent = message;
+    successDiv.style.display = "block";
+    errorDiv.style.display = "none";
+    setTimeout(() => {
+        successDiv.style.display = "none";
+    }, 3000);
+}
+
+function showError(message) {
+    const successDiv = document.getElementById("success-message");
+    const errorDiv = document.getElementById("error-message");
+    errorDiv.textContent = message;
+    errorDiv.style.display = "block";
+    successDiv.style.display = "none";
+    setTimeout(() => {
+        errorDiv.style.display = "none";
+    }, 3000);
+}
+
 // For modal display of day classes
 function showClassesForDay(date, classes) {
-    document.getElementById("modal-date").textContent = new Date(date).toDateString();
+    document.getElementById("modal-date").textContent = new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 
     const list = document.getElementById("modal-class-list");
     list.innerHTML = '';
+
+    if (classes.length === 0) {
+        list.innerHTML = '<p>No classes scheduled for this day.</p>';
+        return;
+    }
 
     classes.forEach(cls => {
         const div = document.createElement("div");
         div.classList.add("class-item");
 
-        const time = new Date(cls.schedule_time).toLocaleTimeString('en-US', {
-            hour: '2-digit', minute: '2-digit'
+        // Add 4 hours to the class time
+        const classTime = new Date(cls.schedule_time);
+        classTime.setHours(classTime.getHours() + 4);
+        
+        const time = classTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
         });
+
+        const isFull = cls.current_bookings >= cls.capacity;
+        const spotsLeft = cls.capacity - cls.current_bookings;
 
         div.innerHTML = `
             <h3>${cls.class_name}</h3>
-            <p>Time: ${time}</p>
-            <p>Trainer: ${cls.trainer_name}</p>
-            <p>Available: ${cls.capacity - cls.current_bookings}</p>
-            <button onclick="bookClass(${cls.id})"
-                ${cls.current_bookings >= cls.capacity ? 'disabled' : ''}>
-                ${cls.current_bookings >= cls.capacity ? 'Full' : 'Book'}
+            <p><strong>Time:</strong> ${time}</p>
+            <p><strong>Trainer:</strong> ${cls.trainer_name}</p>
+            <p><strong>Spots Available:</strong> ${spotsLeft} of ${cls.capacity}</p>
+            ${cls.description ? `<p><strong>Description:</strong> ${cls.description}</p>` : ''}
+            <button onclick="bookClass(${cls.id}, this)"
+                ${isFull ? 'disabled' : ''}>
+                ${isFull ? 'Class Full' : 'Book Class'}
             </button>
         `;
         list.appendChild(div);

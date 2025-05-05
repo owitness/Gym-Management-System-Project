@@ -42,6 +42,7 @@ class DatabaseConnectionManager:
 
         logger.debug(f"Loading PEM key from {self._pem_path}")
         if not os.path.exists(self._pem_path):
+            logger.error(f"PEM file not found at {self._pem_path}")
             raise FileNotFoundError(f"PEM file not found: {self._pem_path}")
 
         try:
@@ -80,12 +81,16 @@ class DatabaseConnectionManager:
                 user=DATABASE_CONFIG['user'],
                 password=DATABASE_CONFIG['password'],
                 database=DATABASE_CONFIG['database'],
-                autocommit=True
+                autocommit=True,
+                connect_timeout=10
             )
             self._last_connection_time = time.time()
-            logger.info("MySQL connection pool created")
-        except Exception as e:
+            logger.info("MySQL connection pool created successfully")
+        except mysql.connector.Error as e:
             logger.error(f"Failed to create MySQL pool: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error creating MySQL pool: {e}")
             raise
 
     def _check_connection_age(self):
@@ -105,21 +110,28 @@ class DatabaseConnectionManager:
 
     @contextmanager
     def get_connection(self):
-        self._create_ssh_tunnel()
-        self._create_connection_pool()
-        self._check_connection_age()
-
-        conn = self._pool.get_connection()
-        cursor = conn.cursor()
-        self._connections.append(conn)
-
         try:
-            yield conn, cursor
-        finally:
-            cursor.close()
-            if conn.is_connected():
-                conn.close()
-            self._connections.remove(conn)
+            self._create_ssh_tunnel()
+            self._create_connection_pool()
+            self._check_connection_age()
+
+            conn = self._pool.get_connection()
+            cursor = conn.cursor()
+            self._connections.append(conn)
+
+            try:
+                yield conn, cursor
+            finally:
+                cursor.close()
+                if conn.is_connected():
+                    conn.close()
+                self._connections.remove(conn)
+        except mysql.connector.Error as e:
+            logger.error(f"MySQL connection error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in get_connection: {e}")
+            raise
 
     def cleanup(self):
         if self._tunnel and self._tunnel.is_active:

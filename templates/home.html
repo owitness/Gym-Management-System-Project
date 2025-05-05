@@ -18,38 +18,14 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('gym_token') || 
-                          document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-            
-            if (token) {
-                document.getElementById('auth-buttons').innerHTML = `
-                    <a href="{{ url_for('dashboard') }}" class="button">My Account</a>
-                `;
-            }
-            
-            const myAccountBtn = document.querySelector('#auth-buttons a[href*="dashboard"]');
-            if (myAccountBtn) {
-                myAccountBtn.addEventListener('click', handleMyAccountClick);
-            }
+            checkAuthenticationStatus();
             
             // Add event listener for clear session button
             const clearSessionBtn = document.getElementById('clear-session');
             if (clearSessionBtn) {
                 clearSessionBtn.addEventListener('click', function(e) {
-                    // Clear localStorage
-                    localStorage.removeItem('gym_token');
-                    
-                    // Clear any cookies that might store tokens
-                    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                    document.cookie = 'gym_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                    
-                    // Update the auth buttons to show Sign In and Join Now
-                    document.getElementById('auth-buttons').innerHTML = `
-                        <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
-                        <a href="{{ url_for('login') }}" class="button">Sign In</a>
-                    `;
-                    
-                    // You can add an alert if you want feedback
+                    clearAllAuthData();
+                    updateAuthButtons(false);
                     alert('Session and local storage have been cleared.');
                 });
             }
@@ -57,6 +33,70 @@
             // Initialize the particle animation system
             initParticleAnimation();
         });
+        
+        function checkAuthenticationStatus() {
+            const token = localStorage.getItem('gym_token') || 
+                          document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+            
+            if (token) {
+                // Check if token is valid by making a request to the verify endpoint
+                fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Token is valid, show "My Account" button
+                        updateAuthButtons(true);
+                    } else {
+                        // Token is invalid or expired, clear it and show login/signup
+                        clearAllAuthData();
+                        updateAuthButtons(false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verifying token:', error);
+                    clearAllAuthData();
+                    updateAuthButtons(false);
+                });
+            } else {
+                // No token found, show login/signup buttons
+                updateAuthButtons(false);
+            }
+        }
+        
+        function updateAuthButtons(isAuthenticated) {
+            const authButtonsContainer = document.getElementById('auth-buttons');
+            if (!authButtonsContainer) return;
+            
+            if (isAuthenticated) {
+                authButtonsContainer.innerHTML = `
+                    <a href="{{ url_for('dashboard') }}" class="button">My Account</a>
+                `;
+                const myAccountBtn = authButtonsContainer.querySelector('a[href*="dashboard"]');
+                if (myAccountBtn) {
+                    myAccountBtn.addEventListener('click', handleMyAccountClick);
+                }
+            } else {
+                authButtonsContainer.innerHTML = `
+                    <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                    <a href="{{ url_for('login') }}" class="button">Sign In</a>
+                `;
+            }
+        }
+        
+        function clearAllAuthData() {
+            // Clear localStorage
+            localStorage.removeItem('gym_token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('gym_refresh_token');
+            localStorage.removeItem('gym_user');
+            
+            // Clear any cookies that might store tokens
+            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'gym_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
         
         function handleMyAccountClick(event) {
             const token = localStorage.getItem('gym_token');
