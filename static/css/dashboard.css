@@ -81,3 +81,29 @@ h2 {
     font-weight: bold;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
+
+/* Target only the Attendance History card */
+.attendance-grid .attendance-card:nth-of-type(2) {
+    height: 350px; /* You can adjust the height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Make the scrollable area take the rest of the card's space */
+#attendance-history {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-right: 8px;
+}
+
+/* Optional: nice scrollbar for modern browsers */
+#attendance-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+#attendance-history::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
