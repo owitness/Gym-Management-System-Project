@@ -3,6 +3,34 @@
 <head>
     <link href="{{ url_for('static', filename='css/admin.css') }}" type="text/css" rel="stylesheet">
     <link href="{{ url_for('home') }}" rel="home">
+    <style>
+        /* Styles for the logout button */
+        .header-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .logout-btn {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background-color: #d9342b;
+        }
+        
+        /* Make header relative for absolute positioning of logout button */
+        header {
+            position: relative;
+        }
+    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             let statusElements = document.querySelectorAll(".repair-status");
@@ -146,6 +174,11 @@
             // Load classes and trainers
             loadClasses();
             populateTrainerDropdown();
+            
+            // Add event listener for logout button
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                logoutUser();
+            });
         });
 
         document.getElementById("newClassForm").addEventListener("submit", async function (event) {
@@ -254,11 +287,55 @@
         function employeeConfirmationMessage() {
             alert("An Employee has been successfully added!");
         }
+
+        // Function to handle user logout
+        async function logoutUser() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                // Call logout API
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Clear local storage
+                localStorage.removeItem('token');
+                localStorage.removeItem('gym_token');
+                localStorage.removeItem('gym_refresh_token');
+                localStorage.removeItem('gym_user');
+                
+                // Clear cookies
+                document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                
+                // Redirect to login page
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                
+                // Even if the API call fails, clear local storage and redirect
+                localStorage.removeItem('token');
+                localStorage.removeItem('gym_token');
+                localStorage.removeItem('gym_refresh_token');
+                localStorage.removeItem('gym_user');
+                window.location.href = '/login';
+            }
+        }
     </script>
 </head>
 <body>
     <header>
         <h1>Gym Admin Dashboard</h1>
+        <div class="header-controls">
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </div>
     </header>
 
     <div class="container">

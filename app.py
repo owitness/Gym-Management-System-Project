@@ -32,6 +32,10 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HT
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# Track if this is the first request to the app
+app.config['FIRST_REQUEST'] = True
+
 csrf = CSRFProtect(app)
 
 # Exempt API routes from CSRF protection
@@ -316,6 +320,12 @@ def redirect_dashboard_with_token():
 
 @app.before_request
 def before_request():
+    # Clear sessions on the first request after server restart
+    if app.config.get('FIRST_REQUEST', True):
+        session.clear()
+        app.config['FIRST_REQUEST'] = False
+        app.logger.info("Server restarted: Cleared all sessions")
+    
     # List of public routes that don't require authentication
     public_routes = [
         'home', 'login', 'signup_page', 'memberships', 'contact', 'calendar',
@@ -353,8 +363,9 @@ def before_request():
             }
             return
         except Exception:
-            # If session is invalid, continue to check token
-            pass
+            # If session is invalid, clear it completely
+            session.clear()
+            # Continue to check token
     
     # Get token from Authorization header or query parameter
     token = request.headers.get('Authorization')

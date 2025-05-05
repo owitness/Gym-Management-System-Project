@@ -146,6 +146,7 @@ def register_user():
             
             # Set session data
             from flask import session
+            session.clear()  # Clear any existing session first
             session['user_id'] = user['id']
             session['email'] = user['email']
             session['role'] = user['role']
@@ -206,8 +207,11 @@ def login_user():
             # Create token
             token = create_token(user)
             
-            # Set session data
+            # Clear any existing session data first
             from flask import session
+            session.clear()
+            
+            # Set session data
             session['user_id'] = user['id']
             session['email'] = user['email']
             session['role'] = user['role']
