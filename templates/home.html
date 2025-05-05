@@ -6,6 +6,16 @@
     <title>Indiana Fitness Center</title>
     <link href="{{ url_for('static', filename='css/style.css') }}" type="text/css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        #clear-session {
+            color: #ff6b6b;
+            transition: color 0.3s;
+        }
+        #clear-session:hover {
+            color: #ff0000;
+            text-decoration: underline;
+        }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('gym_token') || 
@@ -20,6 +30,28 @@
             const myAccountBtn = document.querySelector('#auth-buttons a[href*="dashboard"]');
             if (myAccountBtn) {
                 myAccountBtn.addEventListener('click', handleMyAccountClick);
+            }
+            
+            // Add event listener for clear session button
+            const clearSessionBtn = document.getElementById('clear-session');
+            if (clearSessionBtn) {
+                clearSessionBtn.addEventListener('click', function(e) {
+                    // Clear localStorage
+                    localStorage.removeItem('gym_token');
+                    
+                    // Clear any cookies that might store tokens
+                    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                    document.cookie = 'gym_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                    
+                    // Update the auth buttons to show Sign In and Join Now
+                    document.getElementById('auth-buttons').innerHTML = `
+                        <a href="{{ url_for('signup_page') }}" class="button">Join Now</a>
+                        <a href="{{ url_for('login') }}" class="button">Sign In</a>
+                    `;
+                    
+                    // You can add an alert if you want feedback
+                    alert('Session and local storage have been cleared.');
+                });
             }
             
             // Initialize the particle animation system
@@ -355,6 +387,7 @@
                     <li><a href="{{ url_for('contact') }}">Contact</a></li>
                     <li><a href="{{ url_for('memberships') }}">Memberships</a></li>
                     <li><a href="{{ url_for('signup_page') }}">Join Now</a></li>
+                    <li><a href="{{ url_for('clear_session') }}" id="clear-session">Clear Session</a></li>
                 </ul>
             </div>
             

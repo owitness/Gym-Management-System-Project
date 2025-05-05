@@ -471,5 +471,14 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
+@app.route('/clear-session')
+def clear_session():
+    # Clear session data
+    session.clear()
+    app.logger.info(f"Session cleared by user request from IP: {request.remote_addr}")
+    
+    # Redirect to home page
+    return redirect(url_for('home'))
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
