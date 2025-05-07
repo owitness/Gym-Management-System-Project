@@ -3,3 +3,31 @@ logs/
 *.log
 config.py
 *.pyc
+# Environment variables
+.env
+.env.*
+
+# SSH keys
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+*.so
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
